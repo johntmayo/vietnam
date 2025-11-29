@@ -13,7 +13,8 @@ import {
   type CityStop,
   type ActivityCategory,
   type DurationFilter,
-  type TimeBudgetStatus
+  type TimeBudgetStatus,
+  type TimeOfDay
 } from "./data/tripData";
 
 type ViewMode = "cities" | "days";
@@ -33,6 +34,10 @@ export const App = () => {
   
   // UI state
   const [showInterestedOnly, setShowInterestedOnly] = useState(false);
+  const [showAddActivityModal, setShowAddActivityModal] = useState(false);
+  const [showAddCityModal, setShowAddCityModal] = useState(false);
+  const [editingCityStop, setEditingCityStop] = useState<CityStop | null>(null);
+  const [newActivityCity, setNewActivityCity] = useState<string | null>(null);
 
   // Get activities for selected city
   const cityActivities = useMemo(() => {
@@ -192,6 +197,81 @@ export const App = () => {
     }));
   };
 
+  // Create a new custom activity
+  const createCustomActivity = (activityData: Omit<Activity, 'id'>) => {
+    const newActivity: Activity = {
+      ...activityData,
+      id: `custom-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      isInterested: false
+    };
+    setAllActivities(prev => [...prev, newActivity]);
+    setShowAddActivityModal(false);
+    setNewActivityCity(null);
+  };
+
+  // Add a new city stop
+  const addCityStop = (cityData: Omit<CityStop, 'id'>) => {
+    const newStop: CityStop = {
+      ...cityData,
+      id: `city-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+    };
+    
+    const updatedStops = [...cityStops, newStop].sort((a, b) => 
+      new Date(a.startDate).getTime() - new Date(b.startDate).getTime()
+    );
+    
+    setCityStops(updatedStops);
+    
+    // Regenerate days
+    const newDays = generateDaysFromCityStops(updatedStops);
+    setDays(newDays);
+    
+    setShowAddCityModal(false);
+  };
+
+  // Update city stop dates
+  const updateCityStop = (stopId: string, updates: Partial<CityStop>) => {
+    const updatedStops = cityStops.map(stop => 
+      stop.id === stopId ? { ...stop, ...updates } : stop
+    ).sort((a, b) => 
+      new Date(a.startDate).getTime() - new Date(b.startDate).getTime()
+    );
+    
+    setCityStops(updatedStops);
+    
+    // Regenerate days when dates change
+    if (updates.startDate || updates.endDate || updates.name) {
+      const newDays = generateDaysFromCityStops(updatedStops);
+      setDays(newDays);
+    }
+    
+    setEditingCityStop(null);
+  };
+
+  // Delete a city stop
+  const deleteCityStop = (stopId: string) => {
+    const stop = cityStops.find(s => s.id === stopId);
+    if (!stop) return;
+    
+    setCityStops(prev => prev.filter(s => s.id !== stopId));
+    setDays(prev => prev.filter(d => d.cityOrRegion !== stop.name));
+    setAllActivities(prev => prev.filter(a => a.cityOrRegion !== stop.name));
+    
+    if (selectedCity === stop.name) {
+      const remaining = cityStops.filter(s => s.id !== stopId);
+      setSelectedCity(remaining[0]?.name || null);
+    }
+  };
+
+  // Calculate number of days for a city stop
+  const getDaysForStop = (stop: CityStop): number => {
+    const start = new Date(stop.startDate);
+    const end = new Date(stop.endDate);
+    const diffTime = Math.abs(end.getTime() - start.getTime());
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+    return diffDays;
+  };
+
   return (
     <div className="app-root">
       <div className="hero">
@@ -223,32 +303,67 @@ export const App = () => {
         {/* City Navigation Sidebar */}
         <aside className="sidebar">
           <section className="card">
-            <h2>📍 Your Route</h2>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+              <h2>📍 Your Route</h2>
+              <button
+                className="add-btn-small"
+                onClick={() => setShowAddCityModal(true)}
+                title="Add new city stop"
+              >
+                + Add Stop
+              </button>
+            </div>
             <div className="city-list">
               {cityStops.map((stop) => {
                 const cityDays = days.filter(d => d.cityOrRegion === stop.name);
                 const totalHours = cityDays.reduce((sum, day) => sum + day.totalScheduledHours, 0);
                 const activityCount = cityDays.reduce((sum, day) => sum + day.scheduledActivities.length, 0);
+                const numDays = getDaysForStop(stop);
                 
                 return (
-                  <button
-                    key={stop.id}
-                    className={`city-button ${selectedCity === stop.name ? "active" : ""}`}
-                    onClick={() => setSelectedCity(stop.name)}
-                  >
-                    <div className="city-button-header">
-                      <span className="city-name">{stop.name}</span>
-                      <span className="city-dates">
-                        {new Date(stop.startDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - 
-                        {new Date(stop.endDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                      </span>
+                  <div key={stop.id} className="city-button-wrapper">
+                    <button
+                      className={`city-button ${selectedCity === stop.name ? "active" : ""}`}
+                      onClick={() => setSelectedCity(stop.name)}
+                    >
+                      <div className="city-button-header">
+                        <span className="city-name">{stop.name}</span>
+                        <span className="city-dates">
+                          {new Date(stop.startDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} - 
+                          {new Date(stop.endDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                        </span>
+                      </div>
+                      <div className="city-stats">
+                        <span>📅 {numDays} days</span>
+                        <span>🎯 {activityCount} activities</span>
+                        <span>⏱️ {totalHours.toFixed(1)}h</span>
+                      </div>
+                    </button>
+                    <div className="city-actions">
+                      <button
+                        className="edit-btn-small"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setEditingCityStop(stop);
+                        }}
+                        title="Edit dates"
+                      >
+                        ✏️
+                      </button>
+                      <button
+                        className="delete-btn-small"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (confirm(`Delete ${stop.name}? This will also remove all activities in this city.`)) {
+                            deleteCityStop(stop.id);
+                          }
+                        }}
+                        title="Delete stop"
+                      >
+                        🗑️
+                      </button>
                     </div>
-                    <div className="city-stats">
-                      <span>📅 {cityDays.length} days</span>
-                      <span>🎯 {activityCount} activities</span>
-                      <span>⏱️ {totalHours.toFixed(1)}h</span>
-                    </div>
-                  </button>
+                  </div>
                 );
               })}
             </div>
@@ -321,10 +436,23 @@ export const App = () => {
 
               {/* Activities List */}
               <section className="panel">
-                <h2>🎯 Activities in {selectedCity}</h2>
-                <p className="muted">
-                  {cityActivities.length} activities available. Check the box to mark as interested, or assign directly to a day.
-                </p>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '24px' }}>
+                  <div>
+                    <h2>🎯 Activities in {selectedCity}</h2>
+                    <p className="muted">
+                      {cityActivities.length} activities available. Check the box to mark as interested, or assign directly to a day.
+                    </p>
+                  </div>
+                  <button
+                    className="add-btn"
+                    onClick={() => {
+                      setNewActivityCity(selectedCity);
+                      setShowAddActivityModal(true);
+                    }}
+                  >
+                    + Create Activity
+                  </button>
+                </div>
                 <div className="activities-grid">
                   {cityActivities.map((activity) => (
                     <ActivityCard
@@ -375,6 +503,36 @@ export const App = () => {
           )}
         </main>
       </div>
+
+      {/* Add City Stop Modal */}
+      {showAddCityModal && (
+        <AddCityModal
+          onClose={() => setShowAddCityModal(false)}
+          onSave={(cityData) => addCityStop(cityData)}
+          existingStops={cityStops}
+        />
+      )}
+
+      {/* Edit City Stop Modal */}
+      {editingCityStop && (
+        <EditCityModal
+          cityStop={editingCityStop}
+          onClose={() => setEditingCityStop(null)}
+          onSave={(updates) => updateCityStop(editingCityStop.id, updates)}
+        />
+      )}
+
+      {/* Add Activity Modal */}
+      {showAddActivityModal && newActivityCity && (
+        <AddActivityModal
+          cityName={newActivityCity}
+          onClose={() => {
+            setShowAddActivityModal(false);
+            setNewActivityCity(null);
+          }}
+          onSave={(activityData) => createCustomActivity(activityData)}
+        />
+      )}
     </div>
   );
 };
@@ -529,6 +687,327 @@ const DayCard = ({ day, onRemoveActivity, onSuggest, budget }: DayCardProps) => 
       <button className="suggest-btn" onClick={onSuggest}>
         <span>✨ Suggest Activities for This Day</span>
       </button>
+    </div>
+  );
+};
+
+// Add City Stop Modal Component
+interface AddCityModalProps {
+  onClose: () => void;
+  onSave: (cityData: Omit<CityStop, 'id'>) => void;
+  existingStops: CityStop[];
+}
+
+const AddCityModal = ({ onClose, onSave, existingStops }: AddCityModalProps) => {
+  const [name, setName] = useState("");
+  const [startDate, setStartDate] = useState("");
+  const [numDays, setNumDays] = useState(2);
+  const [region, setRegion] = useState<"North" | "Central" | "South" | "">("");
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!name || !startDate) return;
+    
+    const start = new Date(startDate);
+    const end = new Date(start);
+    end.setDate(end.getDate() + numDays - 1);
+    
+    onSave({
+      name,
+      startDate: start.toISOString().split('T')[0],
+      endDate: end.toISOString().split('T')[0],
+      region: region || undefined
+    });
+  };
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+        <div className="modal-header">
+          <h2>➕ Add New City Stop</h2>
+          <button className="modal-close" onClick={onClose}>×</button>
+        </div>
+        <form onSubmit={handleSubmit}>
+          <div className="form-group">
+            <label>City Name *</label>
+            <input
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="e.g., Da Nang, Hue, Sapa"
+              required
+            />
+          </div>
+          <div className="form-group">
+            <label>Start Date *</label>
+            <input
+              type="date"
+              value={startDate}
+              onChange={(e) => setStartDate(e.target.value)}
+              required
+            />
+          </div>
+          <div className="form-group">
+            <label>Number of Days *</label>
+            <input
+              type="number"
+              min="1"
+              value={numDays}
+              onChange={(e) => setNumDays(parseInt(e.target.value) || 1)}
+              required
+            />
+            <small>End date will be: {startDate && (() => {
+              const start = new Date(startDate);
+              const end = new Date(start);
+              end.setDate(end.getDate() + numDays - 1);
+              return end.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+            })()}</small>
+          </div>
+          <div className="form-group">
+            <label>Region (optional)</label>
+            <select
+              value={region}
+              onChange={(e) => setRegion(e.target.value as any)}
+            >
+              <option value="">Select region</option>
+              <option value="North">North</option>
+              <option value="Central">Central</option>
+              <option value="South">South</option>
+            </select>
+          </div>
+          <div className="modal-actions">
+            <button type="button" className="btn-secondary" onClick={onClose}>
+              Cancel
+            </button>
+            <button type="submit" className="btn-primary">
+              Add City Stop
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
+
+// Edit City Stop Modal Component
+interface EditCityModalProps {
+  cityStop: CityStop;
+  onClose: () => void;
+  onSave: (updates: Partial<CityStop>) => void;
+}
+
+const EditCityModal = ({ cityStop, onClose, onSave }: EditCityModalProps) => {
+  const [name, setName] = useState(cityStop.name);
+  const [startDate, setStartDate] = useState(cityStop.startDate);
+  const [numDays, setNumDays] = useState(() => {
+    const start = new Date(cityStop.startDate);
+    const end = new Date(cityStop.endDate);
+    return Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+  });
+  const [region, setRegion] = useState<"North" | "Central" | "South" | "">(cityStop.region || "");
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const start = new Date(startDate);
+    const end = new Date(start);
+    end.setDate(end.getDate() + numDays - 1);
+    
+    onSave({
+      name,
+      startDate: start.toISOString().split('T')[0],
+      endDate: end.toISOString().split('T')[0],
+      region: region || undefined
+    });
+  };
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+        <div className="modal-header">
+          <h2>✏️ Edit City Stop</h2>
+          <button className="modal-close" onClick={onClose}>×</button>
+        </div>
+        <form onSubmit={handleSubmit}>
+          <div className="form-group">
+            <label>City Name *</label>
+            <input
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              required
+            />
+          </div>
+          <div className="form-group">
+            <label>Start Date *</label>
+            <input
+              type="date"
+              value={startDate}
+              onChange={(e) => setStartDate(e.target.value)}
+              required
+            />
+          </div>
+          <div className="form-group">
+            <label>Number of Days *</label>
+            <input
+              type="number"
+              min="1"
+              value={numDays}
+              onChange={(e) => setNumDays(parseInt(e.target.value) || 1)}
+              required
+            />
+            <small>End date will be: {(() => {
+              const start = new Date(startDate);
+              const end = new Date(start);
+              end.setDate(end.getDate() + numDays - 1);
+              return end.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+            })()}</small>
+          </div>
+          <div className="form-group">
+            <label>Region (optional)</label>
+            <select
+              value={region}
+              onChange={(e) => setRegion(e.target.value as any)}
+            >
+              <option value="">Select region</option>
+              <option value="North">North</option>
+              <option value="Central">Central</option>
+              <option value="South">South</option>
+            </select>
+          </div>
+          <div className="modal-actions">
+            <button type="button" className="btn-secondary" onClick={onClose}>
+              Cancel
+            </button>
+            <button type="submit" className="btn-primary">
+              Save Changes
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
+
+// Add Activity Modal Component
+interface AddActivityModalProps {
+  cityName: string;
+  onClose: () => void;
+  onSave: (activityData: Omit<Activity, 'id'>) => void;
+}
+
+const AddActivityModal = ({ cityName, onClose, onSave }: AddActivityModalProps) => {
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [category, setCategory] = useState<ActivityCategory>("culture");
+  const [duration, setDuration] = useState(2);
+  const [timeOfDay, setTimeOfDay] = useState<TimeOfDay>("flexible");
+  const [notes, setNotes] = useState("");
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!title || !description) return;
+    
+    onSave({
+      cityOrRegion: cityName,
+      title,
+      description,
+      category,
+      estimatedDurationHours: duration,
+      recommendedTimeOfDay: timeOfDay,
+      notes: notes || undefined,
+      isInterested: false
+    });
+  };
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+        <div className="modal-header">
+          <h2>➕ Create Activity in {cityName}</h2>
+          <button className="modal-close" onClick={onClose}>×</button>
+        </div>
+        <form onSubmit={handleSubmit}>
+          <div className="form-group">
+            <label>Activity Title *</label>
+            <input
+              type="text"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="e.g., Visit Local Market"
+              required
+            />
+          </div>
+          <div className="form-group">
+            <label>Description *</label>
+            <textarea
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="Describe what you'll do..."
+              rows={4}
+              required
+            />
+          </div>
+          <div className="form-row">
+            <div className="form-group">
+              <label>Category *</label>
+              <select
+                value={category}
+                onChange={(e) => setCategory(e.target.value as ActivityCategory)}
+                required
+              >
+                <option value="food">Food</option>
+                <option value="culture">Culture</option>
+                <option value="outdoors">Outdoors</option>
+                <option value="night">Night</option>
+                <option value="anchor">Anchor</option>
+                <option value="relax">Relax</option>
+                <option value="history">History</option>
+                <option value="shopping">Shopping</option>
+              </select>
+            </div>
+            <div className="form-group">
+              <label>Duration (hours) *</label>
+              <input
+                type="number"
+                min="0.5"
+                step="0.5"
+                value={duration}
+                onChange={(e) => setDuration(parseFloat(e.target.value) || 1)}
+                required
+              />
+            </div>
+          </div>
+          <div className="form-group">
+            <label>Best Time of Day</label>
+            <select
+              value={timeOfDay}
+              onChange={(e) => setTimeOfDay(e.target.value as TimeOfDay)}
+            >
+              <option value="flexible">Flexible</option>
+              <option value="morning">Morning</option>
+              <option value="afternoon">Afternoon</option>
+              <option value="evening">Evening</option>
+            </select>
+          </div>
+          <div className="form-group">
+            <label>Notes (optional)</label>
+            <textarea
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              placeholder="Any additional tips or information..."
+              rows={2}
+            />
+          </div>
+          <div className="modal-actions">
+            <button type="button" className="btn-secondary" onClick={onClose}>
+              Cancel
+            </button>
+            <button type="submit" className="btn-primary">
+              Create Activity
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
   );
 };
