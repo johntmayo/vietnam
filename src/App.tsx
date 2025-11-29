@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import {
   sampleCityStops,
   sampleActivities,
@@ -38,6 +38,26 @@ export const App = () => {
   const [showAddCityModal, setShowAddCityModal] = useState(false);
   const [editingCityStop, setEditingCityStop] = useState<CityStop | null>(null);
   const [newActivityCity, setNewActivityCity] = useState<string | null>(null);
+
+  // Lock body scroll when modals are open (mobile optimization)
+  useEffect(() => {
+    const isModalOpen = showAddActivityModal || showAddCityModal || editingCityStop !== null;
+    if (isModalOpen) {
+      document.body.classList.add('modal-open');
+      // Prevent background scroll on iOS
+      document.body.style.position = 'fixed';
+      document.body.style.width = '100%';
+    } else {
+      document.body.classList.remove('modal-open');
+      document.body.style.position = '';
+      document.body.style.width = '';
+    }
+    return () => {
+      document.body.classList.remove('modal-open');
+      document.body.style.position = '';
+      document.body.style.width = '';
+    };
+  }, [showAddActivityModal, showAddCityModal, editingCityStop]);
 
   // Get activities for selected city
   const cityActivities = useMemo(() => {
@@ -736,6 +756,8 @@ const AddCityModal = ({ onClose, onSave, existingStops }: AddCityModalProps) => 
               onChange={(e) => setName(e.target.value)}
               placeholder="e.g., Da Nang, Hue, Sapa"
               required
+              autoComplete="off"
+              inputMode="text"
             />
           </div>
           <div className="form-group">
@@ -835,6 +857,8 @@ const EditCityModal = ({ cityStop, onClose, onSave }: EditCityModalProps) => {
               value={name}
               onChange={(e) => setName(e.target.value)}
               required
+              autoComplete="off"
+              inputMode="text"
             />
           </div>
           <div className="form-group">
@@ -844,6 +868,7 @@ const EditCityModal = ({ cityStop, onClose, onSave }: EditCityModalProps) => {
               value={startDate}
               onChange={(e) => setStartDate(e.target.value)}
               required
+              inputMode="none"
             />
           </div>
           <div className="form-group">
@@ -854,6 +879,7 @@ const EditCityModal = ({ cityStop, onClose, onSave }: EditCityModalProps) => {
               value={numDays}
               onChange={(e) => setNumDays(parseInt(e.target.value) || 1)}
               required
+              inputMode="numeric"
             />
             <small>End date will be: {(() => {
               const start = new Date(startDate);
@@ -935,6 +961,8 @@ const AddActivityModal = ({ cityName, onClose, onSave }: AddActivityModalProps) 
               onChange={(e) => setTitle(e.target.value)}
               placeholder="e.g., Visit Local Market"
               required
+              autoComplete="off"
+              inputMode="text"
             />
           </div>
           <div className="form-group">
@@ -974,6 +1002,7 @@ const AddActivityModal = ({ cityName, onClose, onSave }: AddActivityModalProps) 
                 value={duration}
                 onChange={(e) => setDuration(parseFloat(e.target.value) || 1)}
                 required
+                inputMode="decimal"
               />
             </div>
           </div>
