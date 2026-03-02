@@ -312,6 +312,62 @@ const TRIP = {
   ]
 };
 
+// ── Flight Data (from e-Ticket.pdf) ─────────
+const FLIGHTS = [
+  {
+    leg: 'Outbound · Leg 1 of 2',
+    flight: 'KE 018',
+    aircraft: 'Airbus A380-800',
+    from: { code: 'LAX', city: 'Los Angeles', terminal: 'B — Tom Bradley Int\'l' },
+    to:   { code: 'ICN', city: 'Seoul (Incheon)', terminal: '2' },
+    departs: 'Fri Mar 6 · 10:50 AM',
+    arrives: 'Sat Mar 7 · 5:35 PM',
+    duration: '13h 45m',
+    seat: '37K',
+    baggage: '1 checked free (up to 23 kg) · carry-on up to 10 kg',
+    date: '2026-03-06'
+  },
+  {
+    leg: 'Outbound · Leg 2 of 2',
+    flight: 'KE 475',
+    aircraft: 'Boeing 777-300ER',
+    from: { code: 'ICN', city: 'Seoul (Incheon)', terminal: '2' },
+    to:   { code: 'SGN', city: 'Ho Chi Minh City', terminal: '2 — Tan Son Nhat' },
+    departs: 'Sat Mar 7 · 6:50 PM',
+    arrives: 'Sat Mar 7 · 10:25 PM',
+    duration: '5h 35m',
+    seat: '34J',
+    baggage: '1 checked free (up to 23 kg) · carry-on up to 10 kg',
+    date: '2026-03-06'
+  },
+  {
+    leg: 'Return · Leg 1 of 2',
+    flight: 'KE 442',
+    aircraft: 'Airbus A321neo',
+    from: { code: 'HAN', city: 'Hanoi (Noi Bai)', terminal: '2' },
+    to:   { code: 'ICN', city: 'Seoul (Incheon)', terminal: '2' },
+    departs: 'Sat Mar 21 · 12:20 PM',
+    arrives: 'Sat Mar 21 · 6:25 PM',
+    duration: '4h 05m',
+    seat: '42F',
+    baggage: '1 checked free (up to 23 kg) · carry-on up to 10 kg',
+    date: '2026-03-21'
+  },
+  {
+    leg: 'Return · Leg 2 of 2',
+    flight: 'KE 011',
+    aircraft: 'Boeing 747-8I',
+    from: { code: 'ICN', city: 'Seoul (Incheon)', terminal: '2' },
+    to:   { code: 'LAX', city: 'Los Angeles', terminal: 'B — Tom Bradley Int\'l' },
+    departs: 'Sat Mar 21 · 7:40 PM',
+    arrives: 'Sat Mar 21 · 2:40 PM',
+    duration: '11h 00m',
+    seat: '41K',
+    baggage: '1 checked free (up to 23 kg) · carry-on up to 10 kg',
+    date: '2026-03-21'
+  }
+];
+
 // ── Date Utils ───────────────────────────────
 const TRIP_START = new Date('2026-03-06T00:00:00');
 const TRIP_END   = new Date('2026-03-21T23:59:59');
@@ -365,6 +421,37 @@ function escape(str) {
     .replace(/"/g,'&quot;');
 }
 
+// ── Flight ticket stub (reused in Today + Refs) ──
+function renderFlightTicket(f) {
+  return `<div class="flight-ticket">
+    <div class="ft-header">
+      <span class="ft-flight">${f.flight}</span>
+      <span class="ft-leg">${escape(f.leg)}</span>
+    </div>
+    <div class="ft-route">
+      <div class="ft-stop">
+        <div class="ft-code">${f.from.code}</div>
+        <div class="ft-city">${escape(f.from.city)}</div>
+        <div class="ft-time">${escape(f.departs)}</div>
+        <div class="ft-terminal">Terminal ${escape(f.from.terminal)}</div>
+      </div>
+      <div class="ft-arrow">&#8594;</div>
+      <div class="ft-stop ft-stop--right">
+        <div class="ft-code">${f.to.code}</div>
+        <div class="ft-city">${escape(f.to.city)}</div>
+        <div class="ft-time">${escape(f.arrives)}</div>
+        <div class="ft-terminal">Terminal ${escape(f.to.terminal)}</div>
+      </div>
+    </div>
+    <div class="ft-details">
+      <div class="ft-detail"><div class="ft-detail-label">Seat</div>${f.seat}</div>
+      <div class="ft-detail"><div class="ft-detail-label">Duration</div>${f.duration}</div>
+      <div class="ft-detail"><div class="ft-detail-label">Aircraft</div>${escape(f.aircraft)}</div>
+      <div class="ft-detail ft-detail--wide"><div class="ft-detail-label">Baggage</div>${escape(f.baggage)}</div>
+    </div>
+  </div>`;
+}
+
 // ── Render: TODAY ────────────────────────────
 function renderToday() {
   const p = getTripPhase();
@@ -416,7 +503,15 @@ function renderToday() {
       <div class="today-date">${fmtLong(e.date)}</div>
     </div>`;
 
-    if (e.type !== 'day') {
+    if (e.type === 'flight') {
+      const legs = FLIGHTS.filter(f => f.date === e.date);
+      if (legs.length) {
+        h += `<div class="today-block">
+          <div class="block-label">Flights Today &mdash; Korean Air &middot; Ref: E9WTAF</div>
+          ${legs.map(renderFlightTicket).join('')}
+        </div>`;
+      }
+    } else if (e.type !== 'day') {
       h += `<div class="today-block">
         <span class="travel-chip">${label}</span>
         <div class="block-content">${escape(e.travel)}</div>
@@ -619,16 +714,6 @@ function renderRefs() {
 
   const REFS = [
     {
-      city: 'Flights',
-      note: 'Korean Air E9WTAF · LAX → HCM, Mar 6–21',
-      stamps: [
-        { label: 'Korean Air', code: 'E9WTAF', color: 'red' },
-        { label: 'Stef e-Visa', code: 'E260212USA59547149160', color: 'blue' }
-      ],
-      phones: [],
-      address: ''
-    },
-    {
       city: 'Ho Chi Minh City',
       note: 'Liberty Central Saigon · Check in Mar 7 · Depart night train Mar 9',
       stamps: [
@@ -673,6 +758,16 @@ function renderRefs() {
   let h = `<div class="page-header">
     <span class="page-header__title">References</span>
     <span class="page-header__sub">Bookings &amp; Contacts</span>
+  </div>`;
+
+  // Flights section — full ticket stubs
+  h += `<div class="refs-section">
+    <div class="refs-city">Korean Air <span>Ref: E9WTAF &middot; Ticket: 1802353922392-393</span></div>
+    <div class="stamp-cluster" style="margin-bottom:16px;">
+      <div class="stamp stamp--red"><span class="stamp__sublabel">Booking Ref</span>E9WTAF</div>
+      <div class="stamp stamp--blue"><span class="stamp__sublabel">Stef e-Visa</span>E260212USA59547149160</div>
+    </div>
+    ${FLIGHTS.map(renderFlightTicket).join('')}
   </div>`;
 
   REFS.forEach(r => {

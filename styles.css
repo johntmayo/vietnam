@@ -817,6 +817,135 @@ body::before {
   color: var(--tan);
 }
 
+/* ============================================
+   FLIGHT TICKET STUB
+   ============================================ */
+
+.flight-ticket {
+  border: 1px solid var(--tan);
+  margin-bottom: 12px;
+  background: var(--paper-mid);
+  position: relative;
+  /* Perforated feel: dashed dividers inside, solid outer border */
+}
+
+/* Punch-hole cutouts on sides */
+.flight-ticket::before,
+.flight-ticket::after {
+  content: '';
+  position: absolute;
+  top: 44px; /* align with route divider */
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--paper);
+  border: 1px solid var(--tan);
+  z-index: 1;
+}
+.flight-ticket::before { left: -7px; }
+.flight-ticket::after  { right: -7px; }
+
+.ft-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding: 10px 14px 9px;
+  border-bottom: 1px dashed var(--tan);
+}
+
+.ft-flight {
+  font-family: var(--serif);
+  font-size: 1.1rem;
+  font-weight: 900;
+  color: var(--ink);
+  letter-spacing: 0.02em;
+}
+
+.ft-leg {
+  font-family: var(--type);
+  font-size: 0.52rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--sepia-light);
+}
+
+.ft-route {
+  display: flex;
+  align-items: flex-start;
+  padding: 12px 14px 10px;
+  border-bottom: 1px dashed var(--tan);
+  gap: 8px;
+}
+
+.ft-stop { flex: 1; }
+.ft-stop--right { text-align: right; }
+
+.ft-code {
+  font-family: var(--serif);
+  font-size: 1.8rem;
+  font-weight: 900;
+  color: var(--sepia);
+  line-height: 1;
+}
+
+.ft-city {
+  font-family: var(--type);
+  font-size: 0.6rem;
+  color: var(--sepia-light);
+  letter-spacing: 0.05em;
+  margin-top: 1px;
+  line-height: 1.3;
+}
+
+.ft-time {
+  font-family: var(--type);
+  font-size: 0.75rem;
+  color: var(--ink);
+  margin-top: 5px;
+  font-weight: bold;
+}
+
+.ft-terminal {
+  font-family: var(--type);
+  font-size: 0.58rem;
+  color: var(--sepia-light);
+  margin-top: 2px;
+}
+
+.ft-arrow {
+  font-size: 1.1rem;
+  color: var(--tan);
+  padding-top: 8px;
+  flex-shrink: 0;
+}
+
+.ft-details {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  padding: 10px 14px 12px;
+}
+
+.ft-detail-label {
+  font-family: var(--type);
+  font-size: 0.5rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--sepia-light);
+  margin-bottom: 1px;
+}
+
+.ft-detail {
+  font-family: var(--type);
+  font-size: 0.72rem;
+  color: var(--ink);
+  line-height: 1.35;
+}
+
+.ft-detail--wide {
+  grid-column: span 2;
+}
+
 /* Money summary */
 .money-summary {
   padding: 20px var(--gutter) 30px 48px;
