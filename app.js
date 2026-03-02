@@ -447,6 +447,40 @@ function markupOverview(str) {
   return escape(str).replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
 }
 
+// ── Live countdown to departure ───────────────
+// 10:50 AM PST (UTC-8) on Fri Mar 6 2026 = 18:50:00 UTC
+const DEPARTURE_UTC = new Date('2026-03-06T18:50:00Z');
+let _cdInterval = null;
+
+function startCountdown() {
+  function pad(n) { return String(n).padStart(2, '0'); }
+
+  function tick() {
+    const diff = DEPARTURE_UTC - Date.now();
+    const ids = ['cd-days', 'cd-hrs', 'cd-min', 'cd-sec'];
+
+    if (diff <= 0) {
+      clearInterval(_cdInterval);
+      ids.forEach(id => { const e = document.getElementById(id); if (e) e.textContent = '00'; });
+      return;
+    }
+
+    const days = Math.floor(diff / 86400000);
+    const hrs  = Math.floor((diff % 86400000) / 3600000);
+    const min  = Math.floor((diff % 3600000)  / 60000);
+    const sec  = Math.floor((diff % 60000)    / 1000);
+
+    [days, hrs, min, sec].forEach((val, i) => {
+      const e = document.getElementById(ids[i]);
+      if (e) e.textContent = pad(val);
+    });
+  }
+
+  clearInterval(_cdInterval);
+  tick();
+  _cdInterval = setInterval(tick, 1000);
+}
+
 function escape(str) {
   return String(str)
     .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
@@ -499,9 +533,28 @@ function renderToday() {
     const dep = TRIP.itinerary[0];
     h += `<div class="countdown-wrap">
       <div class="countdown-ticket">
-        <div class="countdown-days">${p.daysUntil}</div>
-        <div class="countdown-label">${p.daysUntil === 1 ? 'Day' : 'Days'}</div>
-        <div class="countdown-until">Until departure</div>
+        <div class="countdown-grid">
+          <div class="countdown-unit">
+            <div class="countdown-val" id="cd-days">--</div>
+            <div class="countdown-unit-label">Days</div>
+          </div>
+          <div class="countdown-sep">:</div>
+          <div class="countdown-unit">
+            <div class="countdown-val" id="cd-hrs">--</div>
+            <div class="countdown-unit-label">Hrs</div>
+          </div>
+          <div class="countdown-sep">:</div>
+          <div class="countdown-unit">
+            <div class="countdown-val" id="cd-min">--</div>
+            <div class="countdown-unit-label">Min</div>
+          </div>
+          <div class="countdown-sep">:</div>
+          <div class="countdown-unit">
+            <div class="countdown-val" id="cd-sec">--</div>
+            <div class="countdown-unit-label">Sec</div>
+          </div>
+        </div>
+        <div class="countdown-until">Until departure &mdash; LAX &middot; Fri Mar 6 &middot; 10:50 AM PST</div>
       </div>
     </div>
 
@@ -599,6 +652,9 @@ function renderToday() {
   }
 
   el.innerHTML = h;
+
+  // Start live countdown if we're in the pre-departure phase
+  if (p.phase === 'before') startCountdown();
 
   // City name → Places
   el.querySelectorAll('.today-city--linked').forEach(node => {
