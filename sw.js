@@ -3,7 +3,7 @@
    Caches app shell + images for offline use
    ============================================ */
 
-const CACHE = 'vn-journal-v1';
+const CACHE = 'vn-journal-v2';
 
 const SHELL = [
   './',
