@@ -153,6 +153,7 @@ const TRIP = {
   cities: {
     'Ho Chi Minh': {
       image: 'resources/images/ho-chi-minh.jpg',
+      overview: "Vietnam's largest city and economic engine, Ho Chi Minh City (still widely called Saigon) mixes French boulevards, Chinese pagodas, glass towers, and a nonstop motorbike buzz. Once a Khmer fishing village, it became a major French colonial port and the capital of South Vietnam until reunification in 1975, so recent history is very present in the streets.\n\nPeople come for energy as much as for sights: slurp noodles at Ben Thanh Market, wander past the red-brick Notre Dame Cathedral and Central Post Office, and dive into the sobering exhibits of the War Remnants Museum. Evenings spill onto sidewalks and rooftop bars; food runs from tiny plastic-stool stalls to polished new-school Vietnamese, and neighborhoods like Chinatown (Cho Lon) add Chinese temples and markets to the mix.",
       stay: {
         name: 'Liberty Central Saigon Riverside Hotel',
         address: '17 Ton Duc Thang, District 1, Ho Chi Minh City',
@@ -185,6 +186,7 @@ const TRIP = {
     },
     'Hoi An': {
       image: 'resources/images/hoi_an.jpg',
+      overview: "Hoi An is a low-rise riverside town where yellow shop-houses, wooden merchants' homes, and assembly halls recall its past life as a major trading port between the 15th and 19th centuries. Merchants from China, Japan, and Europe left a blend of influences you still see in the Japanese Covered Bridge, Chinese temples, and French balconies.\n\nThe Old Town is a UNESCO World Heritage Site, famous for its lantern-lit evenings, bikes weaving past old facades, and tailors who can turn around custom clothes in a day. Typical days: coffee by the Thu Bon River, exploring historic houses and temples, a bike ride through rice paddies to the countryside or beach, then sunset cocktails and street food under hanging lanterns.",
       stay: {
         name: 'Zen Boutique Eco',
         address: '87 Ly Thuong Kiet, Cam Chau, Hoi An',
@@ -210,6 +212,7 @@ const TRIP = {
     },
     'Hue': {
       image: 'resources/images/hue.jpg',
+      overview: "Hue is Vietnam's old royal capital, straddling the Perfume River with misty hills behind it. From 1802 to 1945 it was the seat of the Nguyễn emperors, and its walled Imperial City—with palaces, temples, and the former Forbidden Purple City—is now a UNESCO World Heritage complex.\n\nTravelers pair citadel wandering with boat trips to riverside pagodas and elaborate royal tombs scattered in the countryside. Hue also has a reputation for refined, slightly more delicate cuisine, so things like imperial-style small dishes and local noodle specialties are worth seeking out after a day of palaces and pagodas.",
       stay: {
         name: 'Pisces Hotel Hue',
         address: '6/4 kiet 7 Nguyễn Công Trứ, Phú Hội, Hue',
@@ -230,6 +233,7 @@ const TRIP = {
     },
     'Phong Nha': {
       image: 'resources/images/phong-nha.jpg',
+      overview: "Phong Nha is a small town at the edge of Phong Nha–Kẻ Bàng National Park, a jungle-covered karst region riddled with caves and underground rivers. The park holds hundreds of caves, including Phong Nha Cave itself and record-breakers like Son Doong, one of the largest cave systems in the world.\n\nThis is an adventure base: boat rides into vast river caves, boardwalks through glittering Paradise Cave, ziplining and swimming at Dark Cave, and cycling along quiet country roads past buffalo and villages. War history is also nearby, with sites like the Ho Chi Minh Trail and DMZ area reachable on tours from the region.",
       stay: {
         name: 'Phong Nha Coco Riverside',
         address: 'Phong Nha, Quảng Bình Province',
@@ -250,6 +254,7 @@ const TRIP = {
     },
     'Ninh Binh': {
       image: 'resources/images/ninh-binh.jpg',
+      overview: "Often nicknamed \"Halong Bay on land,\" Ninh Binh is all about dramatic limestone karsts rising straight out of rice paddies and slow green rivers. The core UNESCO-listed Trang An Landscape Complex weaves together caves, waterways, and temples, with boat trips that slip under low cave ceilings and between cliffs.\n\nVisitors typically base in Tam Coc or Trang An, climb Mua Cave steps for a sweeping viewpoint over river and paddies, and visit Hoa Lu, an ancient Vietnamese capital from the 10th century. The vibe is slower and rural: think rowing boats, bikes along dikes, and quiet evenings watching the limestone peaks fade into dusk.",
       stay: {
         name: 'Tam Cốc Garden-style Ecolodge',
         address: 'Ninh Binh (Tam Cốc / Trang An area)',
@@ -269,6 +274,7 @@ const TRIP = {
     },
     'Hanoi': {
       image: 'resources/images/hanoi.jpg',
+      overview: "Hanoi, Vietnam's capital, layers a thousand years of history with lakes, tree-lined streets, and dense markets. Once called Thang Long (\"Rising Dragon\"), it's been the political and cultural center of Vietnam for most of the last millennium, with brief interludes when power shifted to Hue.\n\nIn the Old Quarter, narrow streets are still loosely organized by traditional trades, with scooters, tiny stools, and street food everywhere. Classic stops include Hoan Kiem Lake, the 11th-century Temple of Literature (Vietnam's first university), the Imperial Citadel of Thang Long, Hoa Lo Prison, and the Vietnam Museum of Ethnology, which showcases the country's 54 ethnic groups. Evenings are for bia hơi (fresh beer) corners, bun cha and pho, and, if you like, rooftop views over the lake or the tangle of the Old Quarter.",
       stay: {
         name: 'Hotel TBD',
         address: 'Old Quarter area recommended',
@@ -541,6 +547,13 @@ function renderPlaces() {
       </div>`;
     } else {
       h += `<div class="city-no-photo">${name}</div>`;
+    }
+
+    // Overview
+    if (city.overview) {
+      h += `<div class="city-overview">
+        ${city.overview.split('\n\n').map(p => `<p>${escape(p)}</p>`).join('')}
+      </div>`;
     }
 
     // Stay

@@ -663,6 +663,22 @@ body::before {
   color: var(--sepia-light);
 }
 
+/* City overview — editorial opener */
+.city-overview {
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: 0.88rem;
+  color: var(--sepia);
+  line-height: 1.72;
+  margin-bottom: 22px;
+  padding-bottom: 18px;
+  border-bottom: 1px solid var(--paper-dark);
+}
+
+.city-overview p + p {
+  margin-top: 0.85em;
+}
+
 /* Lodging block */
 .lodging-block {
   background: var(--paper-mid);
