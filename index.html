@@ -29,6 +29,14 @@
       <div id="screen-refs"    class="screen"></div>
     </div>
 
+    <!-- Slide-up sheet for editing -->
+    <div id="sheet-overlay" class="sheet-overlay hidden">
+      <div class="sheet">
+        <div class="sheet-handle"></div>
+        <div id="sheet-content"></div>
+      </div>
+    </div>
+
     <nav class="tab-nav" role="navigation" aria-label="Main navigation">
       <button class="tab-btn active" data-screen="today" aria-label="Today">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
@@ -60,6 +68,7 @@
     </nav>
   </div>
 
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

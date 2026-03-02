@@ -5,6 +5,16 @@
 
 'use strict';
 
+// ── Supabase · Collaborative editing ─────────────────────────
+const SUPABASE_URL  = 'https://pzpswmbfqftnoyoxlrzq.supabase.co';
+const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB6cHN3bWJmcWZ0bm95b3hscnpxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI0MzE4NjgsImV4cCI6MjA4ODAwNzg2OH0.EKD-TnCP7oBcIBUBo2Gjik3-vrtAbef2I3BYnUA_50w';
+const EDIT_PASSPHRASE = 'saigon'; // ← change this to whatever you both want
+
+let _sb           = null;    // Supabase client
+let _editUnlocked = false;   // edit mode active?
+let _currentUser  = localStorage.getItem('vn_user') || '';
+let _userPlaces   = [];      // local cache from DB
+
 // ── Trip Data ────────────────────────────────
 const TRIP = {
   itinerary: [
@@ -487,6 +497,295 @@ function escape(str) {
     .replace(/"/g,'&quot;');
 }
 
+// ── DB helpers ────────────────────────────────────────────────
+function citySlug(name) {
+  return name.toLowerCase().replace(/\s+/g, '-');
+}
+
+async function initDB() {
+  if (typeof supabase === 'undefined') return;
+  _sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+  // Restore unlock within same browser session
+  if (sessionStorage.getItem('vn_unlocked') === '1') {
+    _editUnlocked = true;
+  }
+  await fetchUserPlaces();
+  subscribeRealtime();
+}
+
+async function fetchUserPlaces() {
+  if (!_sb) return;
+  const { data } = await _sb.from('user_places').select('*').order('created_at');
+  if (data) {
+    _userPlaces = data;
+    refreshAllUserPlaceSections();
+    updateEditUI(); // re-apply edit state after data loads
+  }
+}
+
+function subscribeRealtime() {
+  _sb.channel('vn_places')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'user_places' }, (payload) => {
+      if (payload.eventType === 'INSERT') {
+        if (!_userPlaces.find(p => p.id === payload.new.id)) _userPlaces.push(payload.new);
+      } else if (payload.eventType === 'UPDATE') {
+        const i = _userPlaces.findIndex(p => p.id === payload.new.id);
+        if (i > -1) _userPlaces[i] = payload.new;
+      } else if (payload.eventType === 'DELETE') {
+        _userPlaces = _userPlaces.filter(p => p.id !== payload.old.id);
+      }
+      refreshAllUserPlaceSections();
+    })
+    .subscribe();
+}
+
+async function addUserPlace(city, name, category, notes, status) {
+  if (!_sb) return;
+  const { error } = await _sb.from('user_places')
+    .insert({ city, name, category, notes, status, added_by: _currentUser });
+  if (error) console.error('Add failed:', error);
+}
+
+async function deleteUserPlace(id) {
+  if (!_sb) return;
+  const { error } = await _sb.from('user_places').delete().eq('id', id);
+  if (error) console.error('Delete failed:', error);
+}
+
+async function updateUserPlaceStatus(id, status) {
+  if (!_sb) return;
+  const { error } = await _sb.from('user_places').update({ status }).eq('id', id);
+  if (error) console.error('Update failed:', error);
+}
+
+// ── Edit mode ─────────────────────────────────────────────────
+function toggleEditMode() {
+  if (_editUnlocked) {
+    _editUnlocked = false;
+    sessionStorage.removeItem('vn_unlocked');
+    updateEditUI();
+  } else {
+    showUnlockSheet();
+  }
+}
+
+function updateEditUI() {
+  const btn    = document.getElementById('edit-toggle-btn');
+  const screen = document.getElementById('screen-places');
+  if (!btn || !screen) return;
+  if (_editUnlocked) {
+    btn.classList.add('unlocked');
+    screen.classList.add('edit-mode');
+  } else {
+    btn.classList.remove('unlocked');
+    screen.classList.remove('edit-mode');
+  }
+  refreshAllUserPlaceSections();
+}
+
+// ── Sheet ──────────────────────────────────────────────────────
+function showSheet(html) {
+  const overlay = document.getElementById('sheet-overlay');
+  document.getElementById('sheet-content').innerHTML = html;
+  overlay.classList.remove('hidden');
+  requestAnimationFrame(() => requestAnimationFrame(() => overlay.classList.add('visible')));
+}
+
+function hideSheet() {
+  const overlay = document.getElementById('sheet-overlay');
+  overlay.classList.remove('visible');
+  setTimeout(() => overlay.classList.add('hidden'), 320);
+}
+
+function showUnlockSheet() {
+  showSheet(`
+    <div class="sheet-title">Unlock Editing</div>
+    <div class="sheet-field">
+      <label class="sheet-label">Who are you?</label>
+      <div class="pill-row">
+        <button class="name-pill${_currentUser === 'john' ? ' active' : ''}" data-name="john">John</button>
+        <button class="name-pill${_currentUser === 'stef' ? ' active' : ''}" data-name="stef">Stef</button>
+      </div>
+    </div>
+    <div class="sheet-field">
+      <label class="sheet-label">Passphrase</label>
+      <input id="passphrase-input" type="password" class="sheet-input" placeholder="Enter passphrase" autocomplete="off">
+    </div>
+    <div id="sheet-error" class="sheet-error hidden">Wrong passphrase — try again</div>
+    <button id="unlock-btn" class="sheet-submit">Unlock</button>
+  `);
+
+  let selectedUser = _currentUser;
+  document.querySelectorAll('.name-pill').forEach(pill => {
+    pill.addEventListener('click', () => {
+      document.querySelectorAll('.name-pill').forEach(p => p.classList.remove('active'));
+      pill.classList.add('active');
+      selectedUser = pill.dataset.name;
+    });
+  });
+
+  const doUnlock = () => {
+    const pass = document.getElementById('passphrase-input').value;
+    const err  = document.getElementById('sheet-error');
+    if (!selectedUser) {
+      err.textContent = 'Pick a name first';
+      err.classList.remove('hidden');
+      return;
+    }
+    if (pass !== EDIT_PASSPHRASE) {
+      err.textContent = 'Wrong passphrase — try again';
+      err.classList.remove('hidden');
+      document.getElementById('passphrase-input').value = '';
+      document.getElementById('passphrase-input').focus();
+      return;
+    }
+    _editUnlocked = true;
+    _currentUser  = selectedUser;
+    localStorage.setItem('vn_user', selectedUser);
+    sessionStorage.setItem('vn_unlocked', '1');
+    hideSheet();
+    updateEditUI();
+  };
+
+  document.getElementById('unlock-btn').addEventListener('click', doUnlock);
+  document.getElementById('passphrase-input').addEventListener('keydown', e => {
+    if (e.key === 'Enter') doUnlock();
+  });
+  setTimeout(() => document.getElementById('passphrase-input')?.focus(), 350);
+}
+
+const CAT_OPTS = [
+  { id: 'food',     label: 'Food'     },
+  { id: 'bar',      label: 'Bar'      },
+  { id: 'cafe',     label: 'Café'     },
+  { id: 'shop',     label: 'Shop'     },
+  { id: 'activity', label: 'Activity' },
+];
+
+const STATUS_OPTS = [
+  { id: 'want',  label: 'Want'  },
+  { id: 'been',  label: 'Been'  },
+  { id: 'loved', label: 'Loved' },
+];
+
+function showAddPlaceSheet(cityName) {
+  showSheet(`
+    <div class="sheet-title">Add to ${escape(cityName)}</div>
+    <div class="sheet-field">
+      <label class="sheet-label">Category</label>
+      <div class="pill-row" id="cat-pills">
+        ${CAT_OPTS.map((c, i) => `<button class="cat-pill${i === 0 ? ' active' : ''}" data-cat="${c.id}">${c.label}</button>`).join('')}
+      </div>
+    </div>
+    <div class="sheet-field">
+      <label class="sheet-label">Name <span class="sheet-required">*</span></label>
+      <input id="place-name" type="text" class="sheet-input" placeholder="e.g. Bánh Mì 25" autocapitalize="words">
+    </div>
+    <div class="sheet-field">
+      <label class="sheet-label">Notes <span class="sheet-optional">(optional)</span></label>
+      <textarea id="place-notes" class="sheet-textarea" placeholder="Address, tips, why you want to go…" rows="2"></textarea>
+    </div>
+    <div class="sheet-field">
+      <label class="sheet-label">Status</label>
+      <div class="pill-row" id="status-pills">
+        ${STATUS_OPTS.map((s, i) => `<button class="status-pill${i === 0 ? ' active' : ''}" data-status="${s.id}">${s.label}</button>`).join('')}
+      </div>
+    </div>
+    <div id="sheet-error" class="sheet-error hidden">Enter a name first</div>
+    <button id="add-place-btn" class="sheet-submit">Add Place</button>
+  `);
+
+  let selCat    = 'food';
+  let selStatus = 'want';
+
+  document.querySelectorAll('#cat-pills .cat-pill').forEach(pill => {
+    pill.addEventListener('click', () => {
+      document.querySelectorAll('#cat-pills .cat-pill').forEach(p => p.classList.remove('active'));
+      pill.classList.add('active');
+      selCat = pill.dataset.cat;
+    });
+  });
+
+  document.querySelectorAll('#status-pills .status-pill').forEach(pill => {
+    pill.addEventListener('click', () => {
+      document.querySelectorAll('#status-pills .status-pill').forEach(p => p.classList.remove('active'));
+      pill.classList.add('active');
+      selStatus = pill.dataset.status;
+    });
+  });
+
+  document.getElementById('add-place-btn').addEventListener('click', async () => {
+    const name = document.getElementById('place-name').value.trim();
+    if (!name) {
+      document.getElementById('sheet-error').classList.remove('hidden');
+      document.getElementById('place-name').focus();
+      return;
+    }
+    const notes = document.getElementById('place-notes').value.trim();
+    hideSheet();
+    await addUserPlace(cityName, name, selCat, notes, selStatus);
+  });
+
+  setTimeout(() => document.getElementById('place-name')?.focus(), 350);
+}
+
+// ── Render user places ────────────────────────────────────────
+const STATUS_LABEL = { want: 'Want to try', been: 'Been there', loved: 'Loved it' };
+const CAT_LABEL    = { food: 'Food', bar: 'Bar', cafe: 'Café', shop: 'Shop', activity: 'Activity' };
+
+function refreshAllUserPlaceSections() {
+  CITY_KEYS.forEach(name => {
+    const el = document.getElementById(`up-${citySlug(name)}`);
+    if (el) renderUserPlacesInto(el, name);
+  });
+}
+
+function renderUserPlacesInto(container, cityName) {
+  const places = _userPlaces.filter(p => p.city === cityName);
+
+  if (places.length === 0) {
+    container.innerHTML = _editUnlocked
+      ? '<div class="up-empty">Tap + Add to drop your first pick here</div>'
+      : '';
+    return;
+  }
+
+  container.innerHTML = places.map(p => `
+    <div class="user-place" data-id="${p.id}">
+      <div class="up-main">
+        <span class="up-cat up-cat--${p.category}">${CAT_LABEL[p.category] || p.category}</span>
+        <span class="up-name">${escape(p.name)}</span>
+        ${_editUnlocked ? `<button class="up-del" data-id="${p.id}" aria-label="Delete">&#215;</button>` : ''}
+      </div>
+      ${p.notes ? `<div class="up-notes">${escape(p.notes)}</div>` : ''}
+      <div class="up-footer">
+        <button class="up-status up-status--${p.status}" data-id="${p.id}" data-status="${p.status}">${STATUS_LABEL[p.status] || p.status}</button>
+        ${p.added_by ? `<span class="up-by">${escape(p.added_by)}</span>` : ''}
+      </div>
+    </div>
+  `).join('');
+
+  // Status cycle (only when unlocked — tap to advance: want → been → loved → want)
+  container.querySelectorAll('.up-status').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      if (!_editUnlocked) return;
+      const order = ['want', 'been', 'loved'];
+      const next  = order[(order.indexOf(btn.dataset.status) + 1) % 3];
+      await updateUserPlaceStatus(btn.dataset.id, next);
+    });
+  });
+
+  // Delete
+  container.querySelectorAll('.up-del').forEach(btn => {
+    btn.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      const name = btn.closest('.user-place')?.querySelector('.up-name')?.textContent || 'this place';
+      if (!confirm(`Remove "${name}"?`)) return;
+      await deleteUserPlace(btn.dataset.id);
+    });
+  });
+}
+
 // ── Flight ticket stub (reused in Today + Refs) ──
 function renderFlightTicket(f) {
   return `<div class="flight-ticket">
@@ -734,10 +1033,23 @@ function renderPlaces() {
   const cities = Object.keys(TRIP.cities);
   const el = document.getElementById('screen-places');
 
+  const lockSVG = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <rect x="3" y="11" width="18" height="11" rx="2"/>
+    <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+  </svg>`;
+  const unlockSVG = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <rect x="3" y="11" width="18" height="11" rx="2"/>
+    <path d="M7 11V7a5 5 0 0 1 10 0"/>
+  </svg>`;
+
   // Header + sticky tab strip
   let h = `<div class="page-header">
     <span class="page-header__title">Places</span>
     <span class="page-header__sub">6 Destinations</span>
+    <button class="edit-toggle-btn" id="edit-toggle-btn" aria-label="Toggle editing">
+      <span class="lock-icon lock-icon--locked">${lockSVG}</span>
+      <span class="lock-icon lock-icon--unlocked">${unlockSVG}</span>
+    </button>
   </div>
   <div class="city-tab-strip">
     ${cities.map((c, i) => `<button class="city-tab-btn${i === 0 ? ' active' : ''}" data-city="${i}">${c}</button>`).join('')}
@@ -805,6 +1117,16 @@ function renderPlaces() {
       </div>`;
     }
 
+    // Your Spots — user-added places (live from Supabase)
+    h += `<div class="places-section your-spots-section">
+      <div class="places-section__head">
+        <span class="places-section__icon">&#9670;</span>
+        <span class="places-section__label">Your Spots</span>
+        <button class="add-spot-btn" data-city="${escape(name)}" aria-label="Add a place">+ Add</button>
+      </div>
+      <div class="user-places-list" id="up-${citySlug(name)}"></div>
+    </div>`;
+
     h += '</div>'; // end city-panel
   });
 
@@ -818,10 +1140,20 @@ function renderPlaces() {
       el.querySelectorAll('.city-panel').forEach(p => p.classList.remove('active'));
       btn.classList.add('active');
       el.querySelector(`#city-panel-${idx}`).classList.add('active');
-      // Scroll to top of places screen
       el.scrollTop = 0;
     });
   });
+
+  // Edit toggle
+  el.querySelector('#edit-toggle-btn').addEventListener('click', toggleEditMode);
+
+  // Add spot buttons
+  el.querySelectorAll('.add-spot-btn').forEach(btn => {
+    btn.addEventListener('click', () => showAddPlaceSheet(btn.dataset.city));
+  });
+
+  // Apply current edit state + populate any already-loaded places
+  updateEditUI();
 }
 
 // ── Render: REFS ─────────────────────────────
@@ -948,8 +1280,16 @@ document.addEventListener('DOMContentLoaded', () => {
     btn.addEventListener('click', () => navigate(btn.dataset.screen));
   });
 
+  // Sheet overlay: tap background to dismiss
+  document.getElementById('sheet-overlay').addEventListener('click', (e) => {
+    if (e.target === e.currentTarget) hideSheet();
+  });
+
   // Register service worker for offline support
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('sw.js').catch(() => {});
   }
+
+  // Connect to Supabase and load collaborative data
+  initDB();
 });
