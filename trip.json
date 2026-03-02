@@ -1,0 +1,554 @@
+{
+  "trip_name": "Vietnam Trip",
+  "source": "Vietnam.xlsx",
+  "generated_at": "2026-03-01T22:09:20.390294",
+  "itinerary": [
+    {
+      "date": "2026-03-06",
+      "title": "depart from LAX- 10:50AM; Booking Reference : E9WTAF Korean Air",
+      "from": "LA",
+      "to": "plane",
+      "travel": "Fly (20 hours, 1 stop)",
+      "notes": "Stef e-visa code:E260212USA59547149160",
+      "type": "flight",
+      "hotel": "Check in 4 days to see if worked https://evisa.gov.vn/e-visa/search",
+      "hotel_address": null,
+      "refs": [
+        "E9WTAF",
+        "E260212USA59547149160"
+      ]
+    },
+    {
+      "date": "2026-03-07",
+      "title": "Ho Chi Minh City",
+      "from": "plane",
+      "to": "HCM",
+      "travel": "arrive sat 7, 10:20pm",
+      "notes": "stay in hotel, store luggage, get train food",
+      "type": "day",
+      "hotel": "Liberty Central Saigon Riverside Hotel",
+      "hotel_address": "17 Ton Duc Thang, District 1, Ho Chi Minh City, Vietnam",
+      "refs": []
+    },
+    {
+      "date": "2026-03-08",
+      "title": "Ho Chi Minh City",
+      "from": "HCM",
+      "to": "HCM",
+      "travel": "",
+      "notes": "",
+      "type": "day",
+      "hotel": null,
+      "hotel_address": null,
+      "refs": []
+    },
+    {
+      "date": "2026-03-09",
+      "title": "Ho Chi Minh City\n8:30pm night train",
+      "from": "HCM",
+      "to": "train",
+      "travel": "15-17 hours (overnight)",
+      "notes": "",
+      "type": "train",
+      "hotel": null,
+      "hotel_address": null,
+      "refs": []
+    },
+    {
+      "date": "2026-03-10",
+      "title": "Hoi An",
+      "from": "train",
+      "to": "Hoi An",
+      "travel": "Hoi An (via Da Nang train)",
+      "notes": "arrive 1pm tues",
+      "type": "train",
+      "hotel": null,
+      "hotel_address": null,
+      "refs": []
+    },
+    {
+      "date": "2026-03-11",
+      "title": "Hoi An",
+      "from": "Hoi An",
+      "to": "Hoi An",
+      "travel": "",
+      "notes": "cooking class?",
+      "type": "day",
+      "hotel": null,
+      "hotel_address": null,
+      "refs": []
+    },
+    {
+      "date": "2026-03-12",
+      "title": "Scooter to Hue",
+      "from": "Hoi An",
+      "to": "Hue",
+      "travel": "",
+      "notes": "",
+      "type": "scooter",
+      "hotel": null,
+      "hotel_address": null,
+      "refs": []
+    },
+    {
+      "date": "2026-03-13",
+      "title": "Take bus from Hue-- Phong Nha (for caves & intense nature)",
+      "from": "Hue",
+      "to": "Phong Na",
+      "travel": "4 hour bus",
+      "notes": "",
+      "type": "bus",
+      "hotel": null,
+      "hotel_address": null,
+      "refs": []
+    },
+    {
+      "date": "2026-03-14",
+      "title": "Phong Nha",
+      "from": "Phong Na",
+      "to": "Phong Na",
+      "travel": "",
+      "notes": "adventure day",
+      "type": "day",
+      "hotel": null,
+      "hotel_address": null,
+      "refs": []
+    },
+    {
+      "date": "2026-03-15",
+      "title": "Phong Nha, overnight train leaves midnight",
+      "from": "Phong Na",
+      "to": "train",
+      "travel": "10 hour train from Phong Nha to Ninh Binh",
+      "notes": "",
+      "type": "train",
+      "hotel": null,
+      "hotel_address": null,
+      "refs": []
+    },
+    {
+      "date": "2026-03-16",
+      "title": "Ninh Binh",
+      "from": "train",
+      "to": "Ninh Binh",
+      "travel": "arrives 9am",
+      "notes": "",
+      "type": "day",
+      "hotel": null,
+      "hotel_address": null,
+      "refs": []
+    },
+    {
+      "date": "2026-03-17",
+      "title": "Ninh Binh",
+      "from": "Ninh Binh",
+      "to": "Ninh Binh",
+      "travel": "",
+      "notes": "",
+      "type": "day",
+      "hotel": null,
+      "hotel_address": null,
+      "refs": []
+    },
+    {
+      "date": "2026-03-18",
+      "title": "Ninh Binh & Hanoi",
+      "from": "Ninh Binh",
+      "to": "Hanoi",
+      "travel": "2 hour train to Hanoi",
+      "notes": "potential to spend another night in Ninh Binh",
+      "type": "train",
+      "hotel": null,
+      "hotel_address": null,
+      "refs": []
+    },
+    {
+      "date": "2026-03-19",
+      "title": "Hanoi",
+      "from": "Hanoi",
+      "to": "Hanoi",
+      "travel": "",
+      "notes": "cooking class?",
+      "type": "day",
+      "hotel": null,
+      "hotel_address": null,
+      "refs": []
+    },
+    {
+      "date": "2026-03-20",
+      "title": "Hanoi",
+      "from": "Hanoi",
+      "to": "Hanoi",
+      "travel": "",
+      "notes": "cooking class?",
+      "type": "day",
+      "hotel": null,
+      "hotel_address": null,
+      "refs": []
+    },
+    {
+      "date": "2026-03-21",
+      "title": "fly out midday- 12:20pm",
+      "from": "Hanoi",
+      "to": "plane",
+      "travel": "16.5 hours, 1 stop",
+      "notes": "",
+      "type": "flight",
+      "hotel": null,
+      "hotel_address": null,
+      "refs": []
+    }
+  ],
+  "cities": {
+    "Ho Chi Minh": {
+      "raw_lines": [
+        "arrive at 10:40 pm",
+        "Stay in District 1",
+        "Liberty Central Saigon Hotel | Agoda Booking: 966228062",
+        "17 Ton Duc Thang, District 1, Ho Chi Minh City, Vietnam",
+        "To Do:",
+        "Saigon vegetarian tasting dinners",
+        "Chinatown (District 5)- Thien Hau Temple, Binh Tay Market, herbal medicine street (Hai Thuong Lan Ong)",
+        "Ride Pillion",
+        "Mekong Delta eco day trip: small sampan rowing through canals",
+        "orchard bike ride",
+        "Walk District 1 (War Remnants Museum, Reunification Palace, Notre Dame Cathedral, Saigon Central Post Office, Nguyen Hue Walking Street, The Opera House, Ben Thanh Market, Café Apartments (quirky cafés stacked in an old building)",
+        "Book Street (Nguyen Van Binh)",
+        "Ho Chi Minh City Museum of Fine Arts",
+        "Tan Dinh Pink Church",
+        "Textile District 10",
+        "Cu Chi Tunnels (Half Day)",
+        "Shopping at Saigon Square or Vincom Mall",
+        "District 7- Korean influences Crescent Lake & Park",
+        "Eats: Districts 1&3- good veg food",
+        "Hum (District 1) | High end, refined",
+        "Pi (District 1)",
+        "Shamballa (District 1)",
+        "Prem Bistro & Café (District 3)",
+        "Chay Bia | Craft Beer + Vegetarian Food",
+        "Nang Tam | for brunch, (traditional Vietnamese vegetarian)",
+        "Drinks:",
+        "Hotel des Arts rooftop",
+        "Chill Skybar",
+        "Pasteur Street Brewery | beer",
+        "Chay Bia | beer",
+        "depart on train SE2, 8:30PM arrive 1PM next day",
+        "Booked: 3B1CAD (Baolau) | Violette Train, The Khach Hang | Coach 9, Number 1-4 | E ticket in email/drive | 30 min early",
+        "HO CHI MINH - Saigon Railway Station\n01 Nguyễn Thông, Phường 9, Quận 3, Hồ Chí Minh"
+      ],
+      "sections": {
+        "raw": [
+          "arrive at 10:40 pm",
+          "Stay in District 1",
+          "Liberty Central Saigon Hotel | Agoda Booking: 966228062",
+          "17 Ton Duc Thang, District 1, Ho Chi Minh City, Vietnam"
+        ],
+        "to_do": [
+          "Saigon vegetarian tasting dinners",
+          "Chinatown (District 5)- Thien Hau Temple, Binh Tay Market, herbal medicine street (Hai Thuong Lan Ong)",
+          "Ride Pillion",
+          "Mekong Delta eco day trip: small sampan rowing through canals",
+          "orchard bike ride",
+          "Walk District 1 (War Remnants Museum, Reunification Palace, Notre Dame Cathedral, Saigon Central Post Office, Nguyen Hue Walking Street, The Opera House, Ben Thanh Market, Café Apartments (quirky cafés stacked in an old building)",
+          "Book Street (Nguyen Van Binh)",
+          "Ho Chi Minh City Museum of Fine Arts",
+          "Tan Dinh Pink Church",
+          "Textile District 10",
+          "Cu Chi Tunnels (Half Day)",
+          "Shopping at Saigon Square or Vincom Mall",
+          "District 7- Korean influences Crescent Lake & Park"
+        ],
+        "eat": [
+          "Hum (District 1) | High end, refined",
+          "Pi (District 1)",
+          "Shamballa (District 1)",
+          "Prem Bistro & Café (District 3)",
+          "Chay Bia | Craft Beer + Vegetarian Food",
+          "Nang Tam | for brunch, (traditional Vietnamese vegetarian)"
+        ],
+        "drink": [
+          "Hotel des Arts rooftop",
+          "Chill Skybar",
+          "Pasteur Street Brewery | beer",
+          "Chay Bia | beer",
+          "depart on train SE2, 8:30PM arrive 1PM next day",
+          "Booked: 3B1CAD (Baolau) | Violette Train, The Khach Hang | Coach 9, Number 1-4 | E ticket in email/drive | 30 min early",
+          "HO CHI MINH - Saigon Railway Station\n01 Nguyễn Thông, Phường 9, Quận 3, Hồ Chí Minh"
+        ]
+      },
+      "lodging": {
+        "name": "Liberty Central Saigon Hotel | Agoda Booking: 966228062",
+        "address": "Stay in District 1"
+      },
+      "refs": [
+        "966228062",
+        "ined",
+        "3B1CAD"
+      ],
+      "phones": [
+        "966228062"
+      ]
+    },
+    "Hoi An": {
+      "raw_lines": [
+        "Arrive at Da Nang, Zen Boutique Eco will pick up on arrivals platform | Da Nang is where Shane lived (53 Tan Da, Danang)! A mix of North & South. | 20.0",
+        "STAY",
+        "Zen Boutique Eco | 87 Ly Thuong Kiet, Cam Chau, Hoi An, Vietnam | booked for night of 10 & 11 | phone +84 90 673 71 45 | Booking: Confirmation: 5331628842\nPIN: 6633 (Confidential)",
+        "TO DO:",
+        "Scooter ride - countryside loop | can do by self. easiest & calmest (rice paddies, water buffalo, tiny lanes)",
+        "scooter ride to Hai Van Pass | dramatic ocean cliffs between Hue & Da Nang, 90 min should get a guide, sketchy | $45-80/pp | MotorVina Travel or Hue Riders / Original Easy Riders",
+        "Countryside Bicycle Ride | Sunrise or late afternoon (see Water buffalo, small farms, vegetable gardens, Rice Paddies + Tra Que Village)",
+        "vegetarian cooking class | could do one with a boat ride and market visit",
+        "An Bang Beach at Sunset",
+        "Buy linen clothes",
+        "Hidden Alley coffee shops",
+        "Old Town at Night (Lantern Walk) | Walk from the Japanese Bridge to the riverfront",
+        "Some history of hoi an show that happens at night",
+        "EAT: (Vegetarian capital of Vietnam)",
+        "Chay Dam – Vegetarian Restaurant (Dam Tra Que) | Farm to table, beautiful garden setting in Tra Que Vegetable Village",
+        "Annen Vegetarian & Yoga | Zen aesthetic, yoga classes + vegetarian café",
+        "Nourish Eatery | International + Vietnamese fusion, brunch/lunch spot",
+        "CHAY – Hoi An Vegan Restaurant | Most fine dining in town, Upscale, beautifully plated vegan Vietnamese dishes",
+        "Take scooter to Hue 9AM on 3/12- pickup at hotel | Easy Rider From Hue Da Nang Hoi An Via Hai Van Pass With Mister T\n\nMar 12, 2026 • 9:00 AM\n x 2 adults\nReference #: 1365980523. through TripAdvisor"
+      ],
+      "sections": {
+        "raw": [
+          "Arrive at Da Nang, Zen Boutique Eco will pick up on arrivals platform | Da Nang is where Shane lived (53 Tan Da, Danang)! A mix of North & South. | 20.0"
+        ],
+        "stay": [
+          "Zen Boutique Eco | 87 Ly Thuong Kiet, Cam Chau, Hoi An, Vietnam | booked for night of 10 & 11 | phone +84 90 673 71 45 | Booking: Confirmation: 5331628842\nPIN: 6633 (Confidential)"
+        ],
+        "to_do": [
+          "Scooter ride - countryside loop | can do by self. easiest & calmest (rice paddies, water buffalo, tiny lanes)",
+          "scooter ride to Hai Van Pass | dramatic ocean cliffs between Hue & Da Nang, 90 min should get a guide, sketchy | $45-80/pp | MotorVina Travel or Hue Riders / Original Easy Riders",
+          "Countryside Bicycle Ride | Sunrise or late afternoon (see Water buffalo, small farms, vegetable gardens, Rice Paddies + Tra Que Village)",
+          "vegetarian cooking class | could do one with a boat ride and market visit",
+          "An Bang Beach at Sunset",
+          "Buy linen clothes",
+          "Hidden Alley coffee shops",
+          "Old Town at Night (Lantern Walk) | Walk from the Japanese Bridge to the riverfront",
+          "Some history of hoi an show that happens at night"
+        ],
+        "eat": [
+          "Chay Dam – Vegetarian Restaurant (Dam Tra Que) | Farm to table, beautiful garden setting in Tra Que Vegetable Village",
+          "Annen Vegetarian & Yoga | Zen aesthetic, yoga classes + vegetarian café",
+          "Nourish Eatery | International + Vietnamese fusion, brunch/lunch spot",
+          "CHAY – Hoi An Vegan Restaurant | Most fine dining in town, Upscale, beautifully plated vegan Vietnamese dishes",
+          "Take scooter to Hue 9AM on 3/12- pickup at hotel | Easy Rider From Hue Da Nang Hoi An Via Hai Van Pass With Mister T\n\nMar 12, 2026 • 9:00 AM\n x 2 adults\nReference #: 1365980523. through TripAdvisor"
+        ]
+      },
+      "lodging": {
+        "name": "Zen Boutique Eco | 87 Ly Thuong Kiet, Cam Chau, Hoi An, Vietnam | booked for night of 10 & 11 | phone +84 90 673 71 45 | Booking: Confirmation: 5331628842\nPIN: 6633 (Confidential)",
+        "address": "Zen Boutique Eco | 87 Ly Thuong Kiet, Cam Chau, Hoi An, Vietnam | booked for night of 10 & 11 | phone +84 90 673 71 45 | Booking: Confirmation: 5331628842\nPIN: 6633 (Confidential)"
+      },
+      "refs": [
+        "Confirmation",
+        "erence"
+      ],
+      "phones": [
+        "+84 90 673 71 45",
+        "5331628842",
+        "1365980523"
+      ]
+    },
+    "Hue": {
+      "raw_lines": [
+        "Arrive via scooter around 4/5pm",
+        "Stay at Pisces Hotel Hue | Booking Number:\n6038803088",
+        "whatsapp+84 7623 55 999",
+        "6/4 kiet 7 Nguyễn Công Trứ tổ 13, phường phú hội, Tp. Huế, Hue, Vietnam",
+        "HK Buslines From 35 Nguyen Cong Tru, Hue (2 blocks from hotel) | leave 9am, be 30 min early | E-ticket in folder & email | 12go.asia Booking confirmation #12GO27634922",
+        "to Central Backpackers Hostel Phong Nha 12GO27634922 | arrive 12:30"
+      ],
+      "sections": {
+        "raw": [
+          "Arrive via scooter around 4/5pm",
+          "Stay at Pisces Hotel Hue | Booking Number:\n6038803088",
+          "whatsapp+84 7623 55 999",
+          "6/4 kiet 7 Nguyễn Công Trứ tổ 13, phường phú hội, Tp. Huế, Hue, Vietnam",
+          "HK Buslines From 35 Nguyen Cong Tru, Hue (2 blocks from hotel) | leave 9am, be 30 min early | E-ticket in folder & email | 12go.asia Booking confirmation #12GO27634922",
+          "to Central Backpackers Hostel Phong Nha 12GO27634922 | arrive 12:30"
+        ]
+      },
+      "lodging": {
+        "name": "Arrive via scooter around 4/5pm",
+        "address": "6/4 kiet 7 Nguyễn Công Trứ tổ 13, phường phú hội, Tp. Huế, Hue, Vietnam"
+      },
+      "refs": [
+        "Number",
+        "confirmation"
+      ],
+      "phones": [
+        "6038803088",
+        "+84 7623 55 999"
+      ]
+    },
+    "Phong Nha": {
+      "raw_lines": [
+        "PHONG NHA (Quảng Bình Province)",
+        "arrive by bus | to Central Backpackers Hostel Phong Nha 12GO27634922",
+        "0.75 mile walk into town from bus drop off to hotel:",
+        "Staying at Phong Nha Coco Riverside",
+        "Phong Nha Coco Riverside Team",
+        "- Whatsapp number: +84(0)365023363/0886686982",
+        "- Email: phongnhacocoriverside@gmail.com",
+        "Things to do:",
+        "World-famous caves (Paradise Cave, Dark Caves, Phong Nha Cave by boat)",
+        "Great eco-lodges (mountain villas, riverside retreats)",
+        "Best for: hiking, caves, nature photographers, silence",
+        "Phong Nha-Kẻ Bàng National Park",
+        "Eats:",
+        "The Pub with Cold Beer - a whole experience, can swim there and float- leave about 4 hours",
+        "LEAVING",
+        "Departs Dong Hoi station at midnight arrives Ninh Binh 9:04am, be 30 min early (12:10 departure)",
+        "Tickets purchased - Confirmation through Baolau- F745F4",
+        "Coach 8, seats 1 & 2",
+        "Tickets in email/drive"
+      ],
+      "sections": {
+        "raw": [
+          "PHONG NHA (Quảng Bình Province)",
+          "arrive by bus | to Central Backpackers Hostel Phong Nha 12GO27634922",
+          "0.75 mile walk into town from bus drop off to hotel:",
+          "Staying at Phong Nha Coco Riverside",
+          "Phong Nha Coco Riverside Team",
+          "- Whatsapp number: +84(0)365023363/0886686982",
+          "- Email: phongnhacocoriverside@gmail.com"
+        ],
+        "to_do": [
+          "World-famous caves (Paradise Cave, Dark Caves, Phong Nha Cave by boat)",
+          "Great eco-lodges (mountain villas, riverside retreats)",
+          "Best for: hiking, caves, nature photographers, silence",
+          "Phong Nha-Kẻ Bàng National Park"
+        ],
+        "eat": [
+          "The Pub with Cold Beer - a whole experience, can swim there and float- leave about 4 hours",
+          "LEAVING",
+          "Departs Dong Hoi station at midnight arrives Ninh Binh 9:04am, be 30 min early (12:10 departure)",
+          "Tickets purchased - Confirmation through Baolau- F745F4",
+          "Coach 8, seats 1 & 2",
+          "Tickets in email/drive"
+        ]
+      },
+      "lodging": {
+        "name": "PHONG NHA (Quảng Bình Province)",
+        "address": "The Pub with Cold Beer - a whole experience, can swim there and float- leave about 4 hours"
+      },
+      "refs": [],
+      "phones": [
+        "365023363",
+        "0886686982"
+      ]
+    },
+    "Ninh Binh": {
+      "raw_lines": [
+        "NINH BÌNH (Tam Cốc / Trang An)",
+        "Stay: | Tam Cốc Garden-style ecolodges (boutique, tranquil, rice fields) | Trang An valley homestays with bungalows",
+        "To do:",
+        "Row to Trang An | quieter, dramatic caves, UNESCO-protected | 7-9am ideal time, buy ticket at Trang An wharf- will be pared with a boat and 2 other people. 3 hours long (get before 10am) https://muave.disantrangan.vn/home/en. People say route 3 with the Dot cave and steps is the best one (though skull island is hokey) or route 2 is the middle, balanced tour",
+        "sunset at Mua Cave viewpoint",
+        "bike ride in village"
+      ],
+      "sections": {
+        "raw": [
+          "NINH BÌNH (Tam Cốc / Trang An)"
+        ],
+        "stay": [],
+        "to_do": [
+          "Row to Trang An | quieter, dramatic caves, UNESCO-protected | 7-9am ideal time, buy ticket at Trang An wharf- will be pared with a boat and 2 other people. 3 hours long (get before 10am) https://muave.disantrangan.vn/home/en. People say route 3 with the Dot cave and steps is the best one (though skull island is hokey) or route 2 is the middle, balanced tour",
+          "sunset at Mua Cave viewpoint",
+          "bike ride in village"
+        ]
+      },
+      "lodging": {
+        "address": "Row to Trang An | quieter, dramatic caves, UNESCO-protected | 7-9am ideal time, buy ticket at Trang An wharf- will be pared with a boat and 2 other people. 3 hours long (get before 10am) https://muave.disantrangan.vn/home/en. People say route 3 with the Dot cave and steps is the best one (though skull island is hokey) or route 2 is the middle, balanced tour"
+      },
+      "refs": [],
+      "phones": []
+    },
+    "Hanoi": {
+      "raw_lines": [
+        "Stay:",
+        "To dos:",
+        "Buy baskets, silk, etc from markets",
+        "Museum",
+        "Parks",
+        "Long Bien Bridge",
+        "Old Quarter (Sword Lake, Bach Ma Temple, Memorial House, food tour)",
+        "Cooking class",
+        "Ho Chi Minh Memorial Complex (mausoleum,house on stilts, one pillar pagoda, Temple of literature)",
+        "Opera House",
+        "St. Joseph's Cathedral",
+        "Hanoi Train Street (can get an egg coffee and wait for the train)",
+        "Governor's Palace/Presidential Palace",
+        "Hoan Kiem Lake",
+        "Thang Long Water Puppet Theatre | book before",
+        "Sit and have a beer and watch the train roll thru | Downtown Hanoi",
+        "Imperial Citadel",
+        "West Lake (Tran Quoc pagoda, Quan Thanh Temple, Tran Quoc Temple)",
+        "Women's museum (?)",
+        "EAT:",
+        "Famous for egg coffee | Giang Cafe (supposed to be the best)",
+        "bia hơi corner (the intersection between Ta Hien and Luong Ngoc Quyen) | street food vendors",
+        "Bahn Mi 25 | Dong Xuan Market",
+        "Use https://www.grab.com/-- uber to get around"
+      ],
+      "sections": {
+        "raw": [],
+        "stay": [
+          "To dos:",
+          "Buy baskets, silk, etc from markets",
+          "Museum",
+          "Parks",
+          "Long Bien Bridge",
+          "Old Quarter (Sword Lake, Bach Ma Temple, Memorial House, food tour)",
+          "Cooking class",
+          "Ho Chi Minh Memorial Complex (mausoleum,house on stilts, one pillar pagoda, Temple of literature)",
+          "Opera House",
+          "St. Joseph's Cathedral",
+          "Hanoi Train Street (can get an egg coffee and wait for the train)",
+          "Governor's Palace/Presidential Palace",
+          "Hoan Kiem Lake",
+          "Thang Long Water Puppet Theatre | book before",
+          "Sit and have a beer and watch the train roll thru | Downtown Hanoi",
+          "Imperial Citadel",
+          "West Lake (Tran Quoc pagoda, Quan Thanh Temple, Tran Quoc Temple)",
+          "Women's museum (?)"
+        ],
+        "eat": [
+          "Famous for egg coffee | Giang Cafe (supposed to be the best)",
+          "bia hơi corner (the intersection between Ta Hien and Luong Ngoc Quyen) | street food vendors",
+          "Bahn Mi 25 | Dong Xuan Market",
+          "Use https://www.grab.com/-- uber to get around"
+        ]
+      },
+      "lodging": {
+        "name": "To dos:"
+      },
+      "refs": [],
+      "phones": []
+    }
+  },
+  "money": [
+    {
+      "amount": 313.5,
+      "category": "trains"
+    },
+    {
+      "amount": 15.525,
+      "category": "bus"
+    },
+    {
+      "amount": 156.36,
+      "category": "hotel"
+    },
+    {
+      "amount": 798.53,
+      "category": "john flight"
+    },
+    {
+      "amount": 58.0,
+      "category": "scooter"
+    }
+  ]
+}

@@ -1,0 +1,887 @@
+/* ============================================
+   VIETNAM · FIELD JOURNAL
+   Design System — Moleskine meets expedition
+   ============================================ */
+
+:root {
+  /* Paper palette */
+  --paper:        #F4ECD8;
+  --paper-mid:    #EAD9BE;
+  --paper-dark:   #DEC9A8;
+  --paper-ruled:  rgba(139, 100, 50, 0.10);
+
+  /* Ink palette */
+  --ink:          #1C0F04;
+  --ink-mid:      #3D2710;
+  --sepia:        #5C3A1E;
+  --sepia-light:  #8B6240;
+  --tan:          #C9A87C;
+
+  /* Accent palette */
+  --rust:         #8B3A1A;
+  --green:        #2C4A2E;
+  --gold:         #9A7B20;
+  --stamp-red:    #7B1515;
+  --stamp-green:  #1A4A2A;
+  --stamp-blue:   #1A2C4A;
+
+  /* Type */
+  --serif:   'Playfair Display', Georgia, serif;
+  --type:    'Special Elite', 'Courier New', monospace;
+  --hand:    'Caveat', cursive;
+
+  /* Layout */
+  --nav-h:   66px;
+  --gutter:  20px;
+}
+
+/* ── Reset ─────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+button { font: inherit; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+a { color: inherit; }
+img { display: block; max-width: 100%; }
+
+/* ── Body & App Shell ───────────────────── */
+html { font-size: 16px; -webkit-text-size-adjust: 100%; }
+
+body {
+  background: #C9A87C;  /* tan surround on desktop */
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  min-height: 100vh;
+  min-height: 100dvh;
+}
+
+/* Paper grain texture via inline SVG noise */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='matrix' values='0 0 0 0 0.35 0 0 0 0 0.22 0 0 0 0 0.1 0 0 0 0.06 0'/%3E%3C/filter%3E%3Crect width='400' height='400' filter='url(%23n)'/%3E%3C/svg%3E");
+  pointer-events: none;
+  z-index: 9000;
+}
+
+#app {
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  max-width: 430px;
+  display: flex;
+  flex-direction: column;
+  background: var(--paper);
+  overflow: hidden;
+
+  /* Left margin line — like a real notebook */
+  background-image:
+    linear-gradient(90deg, transparent 36px, rgba(180,80,30,.15) 36px, rgba(180,80,30,.15) 37px, transparent 37px),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='matrix' values='0 0 0 0 0.38 0 0 0 0 0.24 0 0 0 0 0.11 0 0 0 0.05 0'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* ── Screens ────────────────────────────── */
+#screens {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+}
+
+.screen {
+  position: absolute;
+  inset: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  visibility: hidden;
+  opacity: 0;
+  transition: opacity 0.18s ease;
+}
+
+.screen.active {
+  visibility: visible;
+  opacity: 1;
+}
+
+/* Custom scrollbar */
+.screen::-webkit-scrollbar { width: 3px; }
+.screen::-webkit-scrollbar-track { background: transparent; }
+.screen::-webkit-scrollbar-thumb { background: var(--tan); border-radius: 2px; }
+
+/* ── Shared header ──────────────────────── */
+.page-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding: 18px var(--gutter) 14px;
+  background: var(--paper);
+  border-bottom: 1px solid var(--paper-dark);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.page-header__title {
+  font-family: var(--serif);
+  font-size: 1rem;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink);
+}
+
+.page-header__sub {
+  font-family: var(--type);
+  font-size: 0.6rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--sepia-light);
+}
+
+/* ── Ruled lines util (applied to list items) */
+.ruled {
+  background-image: repeating-linear-gradient(
+    to bottom,
+    transparent, transparent 31px,
+    var(--paper-ruled) 31px, var(--paper-ruled) 32px
+  );
+  background-size: 100% 32px;
+}
+
+/* ============================================
+   TODAY SCREEN
+   ============================================ */
+
+.today-masthead {
+  padding: 28px var(--gutter) 20px 48px; /* inset past margin line */
+  border-bottom: 1px solid var(--paper-dark);
+}
+
+.today-eyebrow {
+  font-family: var(--type);
+  font-size: 0.6rem;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  color: var(--sepia-light);
+  margin-bottom: 4px;
+}
+
+.today-bignum {
+  font-family: var(--serif);
+  font-size: 5.5rem;
+  font-weight: 900;
+  line-height: 1;
+  color: var(--ink);
+  letter-spacing: -0.03em;
+}
+
+.today-city {
+  font-family: var(--serif);
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: var(--sepia);
+  line-height: 1.1;
+  margin-top: 2px;
+}
+
+.today-date {
+  font-family: var(--type);
+  font-size: 0.7rem;
+  color: var(--tan);
+  letter-spacing: 0.12em;
+  margin-top: 10px;
+}
+
+/* Countdown variant */
+.countdown-wrap {
+  padding: 28px var(--gutter) 0 48px;
+}
+
+.countdown-ticket {
+  border: 1px solid var(--tan);
+  padding: 24px 20px;
+  text-align: center;
+  position: relative;
+  margin-bottom: 20px;
+}
+
+.countdown-ticket::before,
+.countdown-ticket::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--paper-dark);
+}
+.countdown-ticket::before { left: -9px; }
+.countdown-ticket::after  { right: -9px; }
+
+.countdown-days {
+  font-family: var(--serif);
+  font-size: 7rem;
+  font-weight: 900;
+  line-height: 1;
+  color: var(--sepia);
+}
+
+.countdown-label {
+  font-family: var(--type);
+  font-size: 0.7rem;
+  letter-spacing: 0.35em;
+  text-transform: uppercase;
+  color: var(--sepia-light);
+  margin-top: 4px;
+}
+
+.countdown-until {
+  font-family: var(--type);
+  font-size: 0.6rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--tan);
+  margin-top: 14px;
+}
+
+/* Info blocks */
+.today-block {
+  padding: 14px var(--gutter) 14px 48px;
+  border-bottom: 1px solid var(--paper-dark);
+}
+
+.block-label {
+  font-family: var(--type);
+  font-size: 0.58rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--sepia-light);
+  margin-bottom: 7px;
+}
+
+.block-content {
+  font-family: var(--type);
+  font-size: 0.85rem;
+  color: var(--ink);
+  line-height: 1.5;
+}
+
+.sleep-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.sleep-cell__label {
+  font-family: var(--type);
+  font-size: 0.55rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--tan);
+  margin-bottom: 2px;
+}
+
+.sleep-cell__val {
+  font-family: var(--type);
+  font-size: 0.82rem;
+  color: var(--ink);
+}
+
+.travel-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-family: var(--type);
+  font-size: 0.62rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--paper);
+  background: var(--rust);
+  padding: 3px 9px 3px;
+  margin-bottom: 6px;
+}
+
+.today-notes-text {
+  font-family: var(--hand);
+  font-size: 1.15rem;
+  color: var(--sepia);
+  line-height: 1.5;
+}
+
+/* Hotel card */
+.hotel-card {
+  margin: 0 var(--gutter) 0 48px;
+  padding: 12px 14px;
+  background: var(--paper-mid);
+  border-left: 3px solid var(--rust);
+  margin-bottom: 20px;
+}
+
+.hotel-card__label {
+  font-family: var(--type);
+  font-size: 0.56rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--sepia-light);
+  margin-bottom: 5px;
+}
+
+.hotel-card__name {
+  font-family: var(--serif);
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--ink);
+  line-height: 1.25;
+}
+
+.hotel-card__address {
+  font-family: var(--type);
+  font-size: 0.72rem;
+  color: var(--sepia-light);
+  margin-top: 5px;
+  line-height: 1.4;
+}
+
+/* Refs inline */
+.inline-refs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 12px var(--gutter) 12px 48px;
+}
+
+/* After trip */
+.trip-done {
+  text-align: center;
+  padding: 70px var(--gutter);
+}
+
+.trip-done__heading {
+  font-family: var(--serif);
+  font-size: 2.2rem;
+  font-weight: 900;
+  font-style: italic;
+  color: var(--sepia);
+  margin-bottom: 12px;
+}
+
+.trip-done__sub {
+  font-family: var(--hand);
+  font-size: 1.25rem;
+  color: var(--sepia-light);
+}
+
+/* ============================================
+   JOURNEY SCREEN
+   ============================================ */
+
+.journey-list {
+  padding: 16px 0;
+}
+
+.journey-entry {
+  display: flex;
+  gap: 0;
+  position: relative;
+  padding: 11px var(--gutter) 11px 0;
+  border-bottom: 1px solid var(--paper-dark);
+  transition: background 0.1s;
+}
+
+.journey-entry.is-past { opacity: 0.5; }
+
+.journey-entry.is-today {
+  background: var(--paper-mid);
+}
+
+/* Date column */
+.j-date {
+  width: 66px;
+  flex-shrink: 0;
+  text-align: center;
+  padding-top: 2px;
+}
+
+.j-date__mon {
+  font-family: var(--type);
+  font-size: 0.5rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--sepia-light);
+}
+
+.j-date__day {
+  font-family: var(--serif);
+  font-size: 1.6rem;
+  font-weight: 900;
+  color: var(--sepia);
+  line-height: 1.05;
+}
+
+/* Vertical timeline line */
+.j-line {
+  position: relative;
+  width: 14px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.j-line::before {
+  content: '';
+  position: absolute;
+  top: 0; bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 1px;
+  background: var(--tan);
+}
+
+.j-dot {
+  position: relative;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--paper);
+  border: 1.5px solid var(--tan);
+  margin-top: 6px;
+  z-index: 1;
+}
+
+.is-today .j-dot {
+  background: var(--rust);
+  border-color: var(--rust);
+  width: 10px;
+  height: 10px;
+  margin-top: 5px;
+}
+
+/* Content */
+.j-body {
+  flex: 1;
+  padding-left: 10px;
+}
+
+.j-title {
+  font-family: var(--serif);
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--ink);
+  line-height: 1.25;
+  margin-bottom: 4px;
+}
+
+.j-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.j-badge {
+  font-family: var(--type);
+  font-size: 0.52rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  padding: 2px 5px;
+}
+
+.j-badge.flight  { background: var(--sepia); color: var(--paper); }
+.j-badge.train   { background: var(--green); color: var(--paper); }
+.j-badge.bus     { background: var(--gold); color: var(--paper); }
+.j-badge.scooter { background: var(--rust); color: var(--paper); }
+.j-badge.day     { border: 1px solid var(--tan); color: var(--sepia-light); }
+
+.j-travel {
+  font-family: var(--type);
+  font-size: 0.7rem;
+  color: var(--sepia-light);
+}
+
+.j-note {
+  font-family: var(--hand);
+  font-size: 0.92rem;
+  color: var(--sepia-light);
+  margin-top: 3px;
+  line-height: 1.3;
+}
+
+.j-today-tag {
+  position: absolute;
+  right: var(--gutter);
+  top: 13px;
+  font-family: var(--type);
+  font-size: 0.52rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--rust);
+}
+
+/* ============================================
+   PLACES SCREEN
+   ============================================ */
+
+.city-tab-strip {
+  display: flex;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  background: var(--paper-mid);
+  border-bottom: 2px solid var(--paper-dark);
+  padding: 12px 12px 0;
+  gap: 4px;
+  position: sticky;
+  top: 0;
+  z-index: 5;
+}
+.city-tab-strip::-webkit-scrollbar { display: none; }
+
+.city-tab-btn {
+  flex-shrink: 0;
+  font-family: var(--type);
+  font-size: 0.6rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--sepia-light);
+  background: var(--paper-dark);
+  border: 1px solid var(--paper-dark);
+  border-bottom: none;
+  border-radius: 1px 1px 0 0;
+  padding: 7px 12px 9px;
+  cursor: pointer;
+  transition: background 0.1s, color 0.1s;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.city-tab-btn.active {
+  background: var(--paper);
+  color: var(--ink);
+  border-color: var(--tan);
+  border-bottom: 2px solid var(--paper);
+  margin-bottom: -2px;
+}
+
+.city-panel {
+  display: none;
+  padding: 22px var(--gutter) 32px 48px;
+}
+.city-panel.active { display: block; }
+
+/* Polaroid */
+.polaroid-wrap {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 22px;
+}
+
+.polaroid {
+  background: #fff;
+  padding: 7px 7px 22px;
+  box-shadow: 2px 3px 10px rgba(28,15,4,.22);
+  transform: rotate(-2deg);
+  width: 140px;
+}
+
+.polaroid img {
+  width: 100%;
+  aspect-ratio: 4/3;
+  object-fit: cover;
+  filter: sepia(0.2) saturate(0.85) contrast(1.05);
+}
+
+.polaroid-label {
+  text-align: center;
+  font-family: var(--hand);
+  font-size: 0.82rem;
+  color: var(--sepia);
+  margin-top: 5px;
+}
+
+.city-no-photo {
+  font-family: var(--hand);
+  font-size: 1rem;
+  color: var(--sepia-light);
+  text-align: center;
+  padding: 12px;
+  margin-bottom: 22px;
+  border: 1px dashed var(--tan);
+}
+
+/* City section blocks */
+.places-section {
+  margin-bottom: 24px;
+}
+
+.places-section__head {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 10px;
+  padding-bottom: 5px;
+  border-bottom: 1px solid var(--tan);
+}
+
+.places-section__icon {
+  font-family: var(--type);
+  font-size: 0.7rem;
+  color: var(--rust);
+}
+
+.places-section__label {
+  font-family: var(--type);
+  font-size: 0.6rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--sepia-light);
+}
+
+.places-item {
+  font-family: var(--type);
+  font-size: 0.8rem;
+  color: var(--ink);
+  line-height: 1.45;
+  padding: 7px 0;
+  border-bottom: 1px solid rgba(201,168,124,.3);
+  display: flex;
+  gap: 8px;
+}
+
+.places-item::before {
+  content: '—';
+  color: var(--tan);
+  flex-shrink: 0;
+}
+
+.places-item em {
+  font-style: normal;
+  color: var(--sepia-light);
+}
+
+/* Lodging block */
+.lodging-block {
+  background: var(--paper-mid);
+  border-left: 3px solid var(--rust);
+  padding: 12px 14px;
+  margin-bottom: 20px;
+  font-family: var(--type);
+  font-size: 0.8rem;
+  color: var(--ink);
+  line-height: 1.45;
+}
+
+.lodging-block strong {
+  display: block;
+  font-family: var(--serif);
+  font-size: 0.95rem;
+  font-weight: 700;
+  margin-bottom: 4px;
+  color: var(--ink);
+}
+
+.lodging-block small {
+  color: var(--sepia-light);
+  font-size: 0.72rem;
+}
+
+/* ============================================
+   REFS SCREEN
+   ============================================ */
+
+.refs-section {
+  padding: 20px var(--gutter) 12px 48px;
+  border-bottom: 1px solid var(--paper-dark);
+}
+
+.refs-city {
+  font-family: var(--serif);
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--sepia);
+  margin-bottom: 12px;
+  padding-bottom: 5px;
+  border-bottom: 1px solid var(--tan);
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+
+.refs-city span {
+  font-family: var(--type);
+  font-size: 0.55rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--tan);
+}
+
+.stamp-cluster {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+/* Rubber stamp */
+.stamp {
+  display: inline-block;
+  font-family: var(--type);
+  font-size: 0.72rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  border: 2.5px solid currentColor;
+  border-radius: 2px;
+  padding: 5px 10px;
+  line-height: 1.2;
+  opacity: 0.82;
+  position: relative;
+}
+.stamp--red   { color: var(--stamp-red); }
+.stamp--green { color: var(--stamp-green); }
+.stamp--blue  { color: var(--stamp-blue); }
+.stamp--sepia { color: var(--sepia); }
+
+.stamp:nth-child(odd)  { transform: rotate(-1.2deg); }
+.stamp:nth-child(even) { transform: rotate(0.8deg);  }
+
+.stamp__sublabel {
+  display: block;
+  font-size: 0.48rem;
+  letter-spacing: 0.14em;
+  opacity: 0.65;
+  margin-bottom: 2px;
+  text-transform: uppercase;
+}
+
+.refs-note {
+  font-family: var(--hand);
+  font-size: 1rem;
+  color: var(--sepia-light);
+  margin-bottom: 10px;
+  line-height: 1.4;
+}
+
+.refs-address {
+  font-family: var(--type);
+  font-size: 0.72rem;
+  color: var(--sepia-light);
+  line-height: 1.5;
+  margin-bottom: 10px;
+}
+
+.phone-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.phone-entry {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--type);
+  font-size: 0.8rem;
+}
+
+.phone-entry a {
+  color: var(--green);
+  text-decoration: none;
+  letter-spacing: 0.05em;
+}
+.phone-entry a:active { opacity: 0.7; }
+
+.phone-entry::before {
+  content: '☎';
+  font-size: 0.7rem;
+  color: var(--tan);
+}
+
+/* Money summary */
+.money-summary {
+  padding: 20px var(--gutter) 30px 48px;
+}
+
+.money-title {
+  font-family: var(--type);
+  font-size: 0.58rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--sepia-light);
+  margin-bottom: 12px;
+}
+
+.money-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding: 6px 0;
+  border-bottom: 1px dashed rgba(201,168,124,.45);
+  font-family: var(--type);
+  font-size: 0.8rem;
+  color: var(--ink);
+}
+.money-row:last-child {
+  border-bottom: none;
+  border-top: 1px solid var(--tan);
+  margin-top: 4px;
+  padding-top: 8px;
+  font-family: var(--serif);
+  font-weight: 700;
+}
+
+.money-cat { text-transform: capitalize; }
+.money-amt { font-variant-numeric: tabular-nums; }
+
+/* ============================================
+   BOTTOM NAVIGATION — notebook tab dividers
+   ============================================ */
+
+.tab-nav {
+  flex-shrink: 0;
+  display: flex;
+  background: var(--paper-mid);
+  border-top: 1px solid var(--tan);
+  height: var(--nav-h);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+.tab-btn {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  background: var(--paper-mid);
+  border: none;
+  border-top: 3px solid transparent;
+  padding: 8px 4px 10px;
+  color: var(--sepia-light);
+  transition: color 0.12s, border-color 0.12s, background 0.12s;
+  position: relative;
+}
+
+.tab-btn:active { opacity: 0.7; }
+
+.tab-btn.active {
+  background: var(--paper);
+  color: var(--ink);
+  border-top-color: var(--rust);
+}
+
+.tab-btn svg {
+  width: 20px;
+  height: 20px;
+}
+
+.tab-btn span {
+  font-family: var(--type);
+  font-size: 0.52rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}

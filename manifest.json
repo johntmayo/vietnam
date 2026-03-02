@@ -1,0 +1,17 @@
+{
+  "name": "Vietnam Field Journal",
+  "short_name": "VN Journal",
+  "description": "Personal travel journal for Vietnam, March 2026",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#F4ECD8",
+  "theme_color": "#DEC9A8",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><rect width='192' height='192' fill='%23F4ECD8'/><text x='96' y='130' font-size='110' text-anchor='middle' font-family='serif'>✈</text></svg>",
+      "sizes": "192x192",
+      "type": "image/svg+xml"
+    }
+  ]
+}
