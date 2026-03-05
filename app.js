@@ -132,8 +132,8 @@ const TRIP = {
       from: 'Ninh Binh', to: 'Hanoi',
       travel: '2-hour train', type: 'train',
       notes: 'Potential to spend another night in Ninh Binh if you want.',
-      hotel: 'Hanoi hotel TBD',
-      hotel_address: null,
+      hotel: 'Soleil Boutique Hotel Hanoi',
+      hotel_address: '211 Hang Bong Str., Hoan Kiem, Ha Noi',
       refs: []
     },
     {
@@ -141,8 +141,8 @@ const TRIP = {
       from: 'Hanoi', to: 'Hanoi',
       travel: '', type: 'day',
       notes: 'Old Quarter, Hoan Kiem Lake. Cooking class?',
-      hotel: 'Hanoi hotel TBD',
-      hotel_address: null,
+      hotel: 'Soleil Boutique Hotel Hanoi',
+      hotel_address: '211 Hang Bong Str., Hoan Kiem, Ha Noi',
       refs: []
     },
     {
@@ -150,8 +150,8 @@ const TRIP = {
       from: 'Hanoi', to: 'Hanoi',
       travel: '', type: 'day',
       notes: 'Thang Long Water Puppet Theatre — book ahead! Train Street egg coffee.',
-      hotel: 'Hanoi hotel TBD',
-      hotel_address: null,
+      hotel: 'Soleil Boutique Hotel Hanoi',
+      hotel_address: '211 Hang Bong Str., Hoan Kiem, Ha Noi',
       refs: []
     },
     {
@@ -290,9 +290,9 @@ const TRIP = {
       image: 'resources/images/hanoi.jpg',
       overview: "Hanoi, Vietnam's capital, layers a thousand years of history with lakes, tree-lined streets, and dense markets. Once called Thang Long (\"Rising Dragon\"), it's been the political and cultural center of Vietnam for most of the last millennium, with brief interludes when power shifted to Hue.\n\nIn the **Old Quarter**, narrow streets are still loosely organized by traditional trades, with scooters, tiny stools, and street food everywhere. Classic stops include **Hoan Kiem Lake**, the 11th-century **Temple of Literature** (Vietnam's first university), the **Imperial Citadel of Thang Long**, **Hoa Lo Prison**, and the **Vietnam Museum of Ethnology**, which showcases the country's 54 ethnic groups. Evenings are for bia hơi (fresh beer) corners, bun cha and pho, and, if you like, rooftop views over the lake or the tangle of the Old Quarter.",
       stay: {
-        name: 'Hotel TBD',
-        address: 'Old Quarter area recommended',
-        booking: 'TBD'
+        name: 'Soleil Boutique Hotel Hanoi',
+        address: '211 Hang Bong Str., Hoan Kiem, Ha Noi',
+        booking: ''
       },
       do: [
         'Old Quarter — Sword Lake, Bach Ma Temple, Memorial House, food tour',
@@ -1420,6 +1420,13 @@ function renderRefs() {
       ],
       phones: ['+84 365023363', '+84 886686982'],
       address: 'Phong Nha Coco Riverside · Phong Nha, Quảng Bình Province\nEmail: phongnhacocoriverside@gmail.com'
+    },
+    {
+      city: 'Hanoi',
+      note: 'Soleil Boutique Hotel · Nights Mar 18–20',
+      stamps: [],
+      phones: ['+84-24-3719-1555'],
+      address: '211 Hang Bong Str., Hoan Kiem, Ha Noi, Viet Nam'
     }
   ];
 
@@ -1460,21 +1467,6 @@ function renderRefs() {
 
     h += '</div>';
   });
-
-  // Budget summary
-  const total = TRIP.money.reduce((s, m) => s + m.amount, 0);
-  h += `<div class="money-summary">
-    <div class="money-title">Budget Summary</div>
-    ${TRIP.money.map(m => `
-      <div class="money-row">
-        <span class="money-cat">${escape(m.category)}</span>
-        <span class="money-amt">$${m.amount.toFixed(2)}</span>
-      </div>`).join('')}
-    <div class="money-row">
-      <span>Total tracked</span>
-      <span class="money-amt">$${total.toFixed(2)}</span>
-    </div>
-  </div>`;
 
   h += `<div class="app-refresh">
     <button id="force-refresh-btn" class="force-refresh-btn">Refresh app</button>
