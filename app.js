@@ -5,6 +5,8 @@
 
 'use strict';
 
+const APP_VERSION = '3';
+
 // ── Supabase · Collaborative editing ─────────────────────────
 const SUPABASE_URL  = 'https://pzpswmbfqftnoyoxlrzq.supabase.co';
 const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB6cHN3bWJmcWZ0bm95b3hscnpxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI0MzE4NjgsImV4cCI6MjA4ODAwNzg2OH0.EKD-TnCP7oBcIBUBo2Gjik3-vrtAbef2I3BYnUA_50w';
@@ -1474,7 +1476,26 @@ function renderRefs() {
     </div>
   </div>`;
 
+  h += `<div class="app-refresh">
+    <button id="force-refresh-btn" class="force-refresh-btn">Refresh app</button>
+    <span class="app-version">v${APP_VERSION}</span>
+  </div>`;
+
   el.innerHTML = h;
+
+  document.getElementById('force-refresh-btn')?.addEventListener('click', async () => {
+    const btn = document.getElementById('force-refresh-btn');
+    if (btn) { btn.textContent = 'Refreshing…'; btn.disabled = true; }
+    try {
+      if ('serviceWorker' in navigator) {
+        const reg = await navigator.serviceWorker.getRegistration();
+        if (reg) await reg.unregister();
+      }
+      const keys = await caches.keys();
+      await Promise.all(keys.map(k => caches.delete(k)));
+    } catch (_) {}
+    window.location.reload(true);
+  });
 }
 
 // ── Navigation ───────────────────────────────

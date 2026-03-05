@@ -1,9 +1,9 @@
 /* ============================================
    Vietnam Field Journal — Service Worker
-   Caches app shell + images for offline use
+   Network-first for code, cache-first for images
    ============================================ */
 
-const CACHE = 'vn-journal-v2';
+const CACHE = 'vn-journal-v3';
 
 const SHELL = [
   './',
@@ -18,7 +18,8 @@ const SHELL = [
   './resources/images/phong-nha.jpg'
 ];
 
-// Install: cache the app shell
+const CODE_FILES = new Set(['/', '/index.html', '/styles.css', '/app.js', '/manifest.json']);
+
 self.addEventListener('install', e => {
   e.waitUntil(
     caches.open(CACHE)
@@ -27,7 +28,6 @@ self.addEventListener('install', e => {
   );
 });
 
-// Activate: clean up old caches
 self.addEventListener('activate', e => {
   e.waitUntil(
     caches.keys().then(keys =>
@@ -36,12 +36,17 @@ self.addEventListener('activate', e => {
   );
 });
 
-// Fetch: cache-first for shell, network-first for fonts
 self.addEventListener('fetch', e => {
   const url = new URL(e.request.url);
 
-  // Google Fonts: network-first, cache fallback
-  if (url.hostname.includes('fonts.g')) {
+  // Only handle same-origin GET requests
+  if (e.request.method !== 'GET' || url.origin !== self.location.origin) return;
+
+  const path = url.pathname.replace(/\/$/, '') || '/';
+  const isCodeFile = CODE_FILES.has(path) || path === '';
+
+  if (isCodeFile || url.hostname.includes('fonts.g')) {
+    // Network-first: always try fresh copy, fall back to cache offline
     e.respondWith(
       fetch(e.request)
         .then(res => {
@@ -54,7 +59,7 @@ self.addEventListener('fetch', e => {
     return;
   }
 
-  // Everything else: cache-first
+  // Images + everything else: cache-first (big files that rarely change)
   e.respondWith(
     caches.match(e.request).then(cached => {
       if (cached) return cached;

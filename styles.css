@@ -1733,3 +1733,35 @@ body::before {
 
 /* Journey entries with nav targets get pointer cursor */
 .journey-entry[role="button"] { cursor: pointer; }
+
+/* ── App refresh button (Refs tab footer) ── */
+.app-refresh {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 32px 0 48px;
+}
+.force-refresh-btn {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #4A3A28;
+  background: rgba(242, 169, 0, 0.06);
+  border: 1px solid rgba(242, 169, 0, 0.15);
+  border-radius: 6px;
+  padding: 8px 16px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: background 0.15s, border-color 0.15s;
+}
+.force-refresh-btn:active { background: rgba(242, 169, 0, 0.15); border-color: rgba(242, 169, 0, 0.35); }
+.force-refresh-btn:disabled { opacity: 0.4; cursor: default; }
+.app-version {
+  font-family: 'Courier Prime', monospace;
+  font-size: 11px;
+  color: #2E2518;
+  letter-spacing: 0.05em;
+}
