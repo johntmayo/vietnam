@@ -8,12 +8,13 @@
 // ── Supabase · Collaborative editing ─────────────────────────
 const SUPABASE_URL  = 'https://pzpswmbfqftnoyoxlrzq.supabase.co';
 const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB6cHN3bWJmcWZ0bm95b3hscnpxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI0MzE4NjgsImV4cCI6MjA4ODAwNzg2OH0.EKD-TnCP7oBcIBUBo2Gjik3-vrtAbef2I3BYnUA_50w';
-const EDIT_PASSPHRASE = 'saigon'; // ← change this to whatever you both want
 
-let _sb           = null;    // Supabase client
-let _editUnlocked = false;   // edit mode active?
-let _currentUser  = localStorage.getItem('vn_user') || '';
-let _userPlaces   = [];      // local cache from DB
+let _sb          = null;    // Supabase client
+let _editMode    = false;   // edit mode active?
+let _currentUser = localStorage.getItem('vn_user') || '';
+let _userPlaces  = [];      // local cache from DB
+let _stars       = [];      // [{item_key, user_name}]
+let _itemMeta    = {};      // {itemKey: {maps_url}}
 
 // ── Trip Data ────────────────────────────────
 const TRIP = {
@@ -502,25 +503,33 @@ function citySlug(name) {
   return name.toLowerCase().replace(/\s+/g, '-');
 }
 
+function hardcodedKey(cityName, section, index) {
+  return `${citySlug(cityName)}-${section}-${index}`;
+}
+
 async function initDB() {
   if (typeof supabase === 'undefined') return;
   _sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
-  // Restore unlock within same browser session
-  if (sessionStorage.getItem('vn_unlocked') === '1') {
-    _editUnlocked = true;
-  }
-  await fetchUserPlaces();
+  await fetchAllData();
   subscribeRealtime();
+  checkFirstVisit();
 }
 
-async function fetchUserPlaces() {
+async function fetchAllData() {
   if (!_sb) return;
-  const { data } = await _sb.from('user_places').select('*').order('created_at');
-  if (data) {
-    _userPlaces = data;
-    refreshAllUserPlaceSections();
-    updateEditUI(); // re-apply edit state after data loads
-  }
+  const [placesRes, starsRes, metaRes] = await Promise.all([
+    _sb.from('user_places').select('*').order('created_at'),
+    _sb.from('stars').select('*'),
+    _sb.from('item_meta').select('*')
+  ]);
+  if (placesRes.data) _userPlaces = placesRes.data;
+  if (starsRes.data)  _stars      = starsRes.data;
+  if (metaRes.data)   _itemMeta   = Object.fromEntries(metaRes.data.map(r => [r.item_key, r]));
+  refreshAllUserPlaceSections();
+  refreshAllStars();
+  refreshAllMapIndicators();
+  updateEditUI();
+  updateUserChip();
 }
 
 function subscribeRealtime() {
@@ -537,12 +546,32 @@ function subscribeRealtime() {
       refreshAllUserPlaceSections();
     })
     .subscribe();
+
+  _sb.channel('vn_stars')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'stars' }, (payload) => {
+      if (payload.eventType === 'INSERT') {
+        if (!_stars.find(s => s.item_key === payload.new.item_key && s.user_name === payload.new.user_name)) {
+          _stars.push(payload.new);
+        }
+      } else if (payload.eventType === 'DELETE') {
+        _stars = _stars.filter(s => !(s.item_key === payload.old.item_key && s.user_name === payload.old.user_name));
+      }
+      refreshAllStars();
+    })
+    .subscribe();
+
+  _sb.channel('vn_meta')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'item_meta' }, (payload) => {
+      if (payload.new) _itemMeta[payload.new.item_key] = payload.new;
+      refreshAllMapIndicators();
+    })
+    .subscribe();
 }
 
-async function addUserPlace(city, name, category, notes, status) {
+async function addUserPlace(city, name, section, notes, mapsUrl) {
   if (!_sb) return;
   const { error } = await _sb.from('user_places')
-    .insert({ city, name, category, notes, status, added_by: _currentUser });
+    .insert({ city, name, category: section, notes, maps_url: mapsUrl, added_by: _currentUser });
   if (error) console.error('Add failed:', error);
 }
 
@@ -552,35 +581,133 @@ async function deleteUserPlace(id) {
   if (error) console.error('Delete failed:', error);
 }
 
-async function updateUserPlaceStatus(id, status) {
+async function toggleStar(itemKey) {
+  if (!_sb || !_currentUser) return;
+  const exists = _stars.find(s => s.item_key === itemKey && s.user_name === _currentUser);
+  if (exists) {
+    const { error } = await _sb.from('stars').delete()
+      .eq('item_key', itemKey).eq('user_name', _currentUser);
+    if (!error) _stars = _stars.filter(s => !(s.item_key === itemKey && s.user_name === _currentUser));
+  } else {
+    const { error } = await _sb.from('stars').insert({ item_key: itemKey, user_name: _currentUser });
+    if (!error) _stars.push({ item_key: itemKey, user_name: _currentUser });
+  }
+  refreshAllStars();
+}
+
+async function setMapsUrl(itemKey, url, isUserPlace) {
   if (!_sb) return;
-  const { error } = await _sb.from('user_places').update({ status }).eq('id', id);
-  if (error) console.error('Update failed:', error);
+  if (isUserPlace) {
+    const { error } = await _sb.from('user_places').update({ maps_url: url }).eq('id', itemKey);
+    if (!error) {
+      const place = _userPlaces.find(p => p.id === itemKey);
+      if (place) place.maps_url = url;
+      refreshAllUserPlaceSections();
+    }
+  } else {
+    const { error } = await _sb.from('item_meta')
+      .upsert({ item_key: itemKey, maps_url: url, updated_at: new Date().toISOString() },
+               { onConflict: 'item_key' });
+    if (!error) _itemMeta[itemKey] = { item_key: itemKey, maps_url: url };
+  }
+  refreshAllMapIndicators();
+}
+
+function refreshAllStars() {
+  document.querySelectorAll('.star-btn[data-item-key]').forEach(btn => {
+    const key    = btn.dataset.itemKey;
+    const user   = btn.dataset.user;
+    const active = _stars.some(s => s.item_key === key && s.user_name === user);
+    btn.classList.toggle('starred', active);
+  });
+}
+
+function refreshAllMapIndicators() {
+  document.querySelectorAll('.pi-map[data-item-key]').forEach(btn => {
+    const key    = btn.dataset.itemKey;
+    const isUser = btn.dataset.isUser === '1';
+    const meta   = _itemMeta[key];
+    const place  = isUser ? _userPlaces.find(p => p.id === key) : null;
+    const url    = (meta && meta.maps_url) || (place && place.maps_url) || '';
+    btn.classList.toggle('has-link', !!url);
+    btn.dataset.mapsUrl = url;
+  });
+}
+
+function refreshAllUserPlaceSections() {
+  CITY_KEYS.forEach(name => {
+    const slug = citySlug(name);
+    ['do', 'eat'].forEach(section => {
+      const el = document.getElementById(`up-${slug}-${section}`);
+      if (el) renderUserPlacesInto(el, name, section);
+    });
+  });
+  refreshAllStars();
+  refreshAllMapIndicators();
+}
+
+function renderUserPlacesInto(container, cityName, section) {
+  const places = _userPlaces.filter(p => p.city === cityName && p.category === section);
+  container.innerHTML = places.map(p =>
+    renderPlaceItemHTML(p.name, p.id, p.maps_url || '', true, p.notes || '')
+  ).join('');
 }
 
 // ── Edit mode ─────────────────────────────────────────────────
 function toggleEditMode() {
-  if (_editUnlocked) {
-    _editUnlocked = false;
-    sessionStorage.removeItem('vn_unlocked');
-    updateEditUI();
-  } else {
-    showUnlockSheet();
-  }
+  _editMode = !_editMode;
+  updateEditUI();
 }
 
 function updateEditUI() {
   const btn    = document.getElementById('edit-toggle-btn');
   const screen = document.getElementById('screen-places');
   if (!btn || !screen) return;
-  if (_editUnlocked) {
-    btn.classList.add('unlocked');
-    screen.classList.add('edit-mode');
+  btn.classList.toggle('unlocked', _editMode);
+  screen.classList.toggle('edit-mode', _editMode);
+}
+
+function updateUserChip() {
+  const chip = document.getElementById('user-chip');
+  if (!chip) return;
+  if (_currentUser === 'john') {
+    chip.textContent = 'J';
+    chip.className = 'user-chip user-chip--john';
+  } else if (_currentUser === 'stef') {
+    chip.textContent = 'S';
+    chip.className = 'user-chip user-chip--stef';
   } else {
-    btn.classList.remove('unlocked');
-    screen.classList.remove('edit-mode');
+    chip.textContent = '?';
+    chip.className = 'user-chip user-chip--unknown';
   }
-  refreshAllUserPlaceSections();
+}
+
+// ── First visit / name picker ─────────────────────────────────
+function checkFirstVisit() {
+  if (!_currentUser) showNamePickerSheet(true);
+  else updateUserChip();
+}
+
+function showNamePickerSheet(isFirstTime) {
+  showSheet(`
+    <div class="sheet-title">${isFirstTime ? 'Who are you?' : 'Switch user'}</div>
+    ${isFirstTime ? '<div class="sheet-hint">You only need to pick once &mdash; we\'ll remember you.</div>' : ''}
+    <div class="sheet-field">
+      <div class="pill-row">
+        <button class="name-pill${_currentUser === 'john' ? ' active' : ''}" data-name="john">John</button>
+        <button class="name-pill${_currentUser === 'stef' ? ' active' : ''}" data-name="stef">Stef</button>
+      </div>
+    </div>
+  `);
+  document.querySelectorAll('.name-pill').forEach(pill => {
+    pill.addEventListener('click', () => {
+      _currentUser = pill.dataset.name;
+      localStorage.setItem('vn_user', _currentUser);
+      hideSheet();
+      updateUserChip();
+      refreshAllStars();
+    });
+  });
 }
 
 // ── Sheet ──────────────────────────────────────────────────────
@@ -597,86 +724,11 @@ function hideSheet() {
   setTimeout(() => overlay.classList.add('hidden'), 320);
 }
 
-function showUnlockSheet() {
-  showSheet(`
-    <div class="sheet-title">Unlock Editing</div>
-    <div class="sheet-field">
-      <label class="sheet-label">Who are you?</label>
-      <div class="pill-row">
-        <button class="name-pill${_currentUser === 'john' ? ' active' : ''}" data-name="john">John</button>
-        <button class="name-pill${_currentUser === 'stef' ? ' active' : ''}" data-name="stef">Stef</button>
-      </div>
-    </div>
-    <div class="sheet-field">
-      <label class="sheet-label">Passphrase</label>
-      <input id="passphrase-input" type="password" class="sheet-input" placeholder="Enter passphrase" autocomplete="off">
-    </div>
-    <div id="sheet-error" class="sheet-error hidden">Wrong passphrase — try again</div>
-    <button id="unlock-btn" class="sheet-submit">Unlock</button>
-  `);
-
-  let selectedUser = _currentUser;
-  document.querySelectorAll('.name-pill').forEach(pill => {
-    pill.addEventListener('click', () => {
-      document.querySelectorAll('.name-pill').forEach(p => p.classList.remove('active'));
-      pill.classList.add('active');
-      selectedUser = pill.dataset.name;
-    });
-  });
-
-  const doUnlock = () => {
-    const pass = document.getElementById('passphrase-input').value;
-    const err  = document.getElementById('sheet-error');
-    if (!selectedUser) {
-      err.textContent = 'Pick a name first';
-      err.classList.remove('hidden');
-      return;
-    }
-    if (pass !== EDIT_PASSPHRASE) {
-      err.textContent = 'Wrong passphrase — try again';
-      err.classList.remove('hidden');
-      document.getElementById('passphrase-input').value = '';
-      document.getElementById('passphrase-input').focus();
-      return;
-    }
-    _editUnlocked = true;
-    _currentUser  = selectedUser;
-    localStorage.setItem('vn_user', selectedUser);
-    sessionStorage.setItem('vn_unlocked', '1');
-    hideSheet();
-    updateEditUI();
-  };
-
-  document.getElementById('unlock-btn').addEventListener('click', doUnlock);
-  document.getElementById('passphrase-input').addEventListener('keydown', e => {
-    if (e.key === 'Enter') doUnlock();
-  });
-  setTimeout(() => document.getElementById('passphrase-input')?.focus(), 350);
-}
-
-const CAT_OPTS = [
-  { id: 'food',     label: 'Food'     },
-  { id: 'bar',      label: 'Bar'      },
-  { id: 'cafe',     label: 'Café'     },
-  { id: 'shop',     label: 'Shop'     },
-  { id: 'activity', label: 'Activity' },
-];
-
-const STATUS_OPTS = [
-  { id: 'want',  label: 'Want'  },
-  { id: 'been',  label: 'Been'  },
-  { id: 'loved', label: 'Loved' },
-];
-
-function showAddPlaceSheet(cityName) {
+function showAddPlaceSheet(cityName, section) {
+  const sectionLabel = section === 'do' ? 'Things to Do' : 'Eat & Drink';
   showSheet(`
     <div class="sheet-title">Add to ${escape(cityName)}</div>
-    <div class="sheet-field">
-      <label class="sheet-label">Category</label>
-      <div class="pill-row" id="cat-pills">
-        ${CAT_OPTS.map((c, i) => `<button class="cat-pill${i === 0 ? ' active' : ''}" data-cat="${c.id}">${c.label}</button>`).join('')}
-      </div>
-    </div>
+    <div class="sheet-hint">${sectionLabel}</div>
     <div class="sheet-field">
       <label class="sheet-label">Name <span class="sheet-required">*</span></label>
       <input id="place-name" type="text" class="sheet-input" placeholder="e.g. Bánh Mì 25" autocapitalize="words">
@@ -686,33 +738,12 @@ function showAddPlaceSheet(cityName) {
       <textarea id="place-notes" class="sheet-textarea" placeholder="Address, tips, why you want to go…" rows="2"></textarea>
     </div>
     <div class="sheet-field">
-      <label class="sheet-label">Status</label>
-      <div class="pill-row" id="status-pills">
-        ${STATUS_OPTS.map((s, i) => `<button class="status-pill${i === 0 ? ' active' : ''}" data-status="${s.id}">${s.label}</button>`).join('')}
-      </div>
+      <label class="sheet-label">Maps link <span class="sheet-optional">(optional)</span></label>
+      <input id="place-maps" type="url" class="sheet-input" placeholder="https://maps.app.goo.gl/…">
     </div>
     <div id="sheet-error" class="sheet-error hidden">Enter a name first</div>
-    <button id="add-place-btn" class="sheet-submit">Add Place</button>
+    <button id="add-place-btn" class="sheet-submit">Add</button>
   `);
-
-  let selCat    = 'food';
-  let selStatus = 'want';
-
-  document.querySelectorAll('#cat-pills .cat-pill').forEach(pill => {
-    pill.addEventListener('click', () => {
-      document.querySelectorAll('#cat-pills .cat-pill').forEach(p => p.classList.remove('active'));
-      pill.classList.add('active');
-      selCat = pill.dataset.cat;
-    });
-  });
-
-  document.querySelectorAll('#status-pills .status-pill').forEach(pill => {
-    pill.addEventListener('click', () => {
-      document.querySelectorAll('#status-pills .status-pill').forEach(p => p.classList.remove('active'));
-      pill.classList.add('active');
-      selStatus = pill.dataset.status;
-    });
-  });
 
   document.getElementById('add-place-btn').addEventListener('click', async () => {
     const name = document.getElementById('place-name').value.trim();
@@ -721,69 +752,103 @@ function showAddPlaceSheet(cityName) {
       document.getElementById('place-name').focus();
       return;
     }
-    const notes = document.getElementById('place-notes').value.trim();
+    const notes   = document.getElementById('place-notes').value.trim();
+    const mapsUrl = document.getElementById('place-maps').value.trim();
     hideSheet();
-    await addUserPlace(cityName, name, selCat, notes, selStatus);
+    await addUserPlace(cityName, name, section, notes, mapsUrl);
   });
 
   setTimeout(() => document.getElementById('place-name')?.focus(), 350);
 }
 
-// ── Render user places ────────────────────────────────────────
-const STATUS_LABEL = { want: 'Want to try', been: 'Been there', loved: 'Loved it' };
-const CAT_LABEL    = { food: 'Food', bar: 'Bar', cafe: 'Café', shop: 'Shop', activity: 'Activity' };
-
-function refreshAllUserPlaceSections() {
-  CITY_KEYS.forEach(name => {
-    const el = document.getElementById(`up-${citySlug(name)}`);
-    if (el) renderUserPlacesInto(el, name);
+function showMapsSheet(itemKey, currentUrl, isUserPlace) {
+  showSheet(`
+    <div class="sheet-title">Maps link</div>
+    <div class="sheet-field">
+      <label class="sheet-label">Google Maps URL</label>
+      <input id="maps-url-input" type="url" class="sheet-input" value="${escape(currentUrl)}" placeholder="https://maps.app.goo.gl/…">
+    </div>
+    <button id="save-maps-btn" class="sheet-submit">Save</button>
+  `);
+  document.getElementById('save-maps-btn').addEventListener('click', async () => {
+    const url = document.getElementById('maps-url-input').value.trim();
+    hideSheet();
+    await setMapsUrl(itemKey, url, isUserPlace);
   });
+  setTimeout(() => document.getElementById('maps-url-input')?.focus(), 350);
 }
 
-function renderUserPlacesInto(container, cityName) {
-  const places = _userPlaces.filter(p => p.city === cityName);
+// ── Place item HTML helper ─────────────────────────────────────
+const MAP_SVG = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-8-6.5-8-12a8 8 0 0 1 16 0c0 5.5-8 12-8 12z"/><circle cx="12" cy="9" r="2.5"/></svg>`;
 
-  if (places.length === 0) {
-    container.innerHTML = _editUnlocked
-      ? '<div class="up-empty">Tap + Add to drop your first pick here</div>'
-      : '';
+function renderPlaceItemHTML(name, itemKey, mapsUrl, isUserAdded, notes) {
+  const notesPart = notes ? `<em class="pi-notes">&nbsp;&mdash;&nbsp;${escape(notes)}</em>` : '';
+  const delBtn    = isUserAdded
+    ? `<button class="pi-del" data-id="${escape(itemKey)}" aria-label="Delete">&#215;</button>`
+    : '';
+  return `<div class="places-item" data-item-key="${escape(itemKey)}">
+    <span class="pi-text"><span>${escape(name)}</span>${notesPart}</span>
+    <span class="pi-actions">
+      <button class="star-btn star-btn--john" data-item-key="${escape(itemKey)}" data-user="john" aria-label="John starred">★<span>J</span></button>
+      <button class="star-btn star-btn--stef" data-item-key="${escape(itemKey)}" data-user="stef" aria-label="Stef starred">★<span>S</span></button>
+      <button class="pi-map${mapsUrl ? ' has-link' : ''}" data-item-key="${escape(itemKey)}" data-maps-url="${escape(mapsUrl)}" data-is-user="${isUserAdded ? '1' : '0'}" aria-label="Maps">${MAP_SVG}</button>
+      ${delBtn}
+    </span>
+  </div>`;
+}
+
+// ── Event delegation for Places screen ────────────────────────
+function handlePlacesClick(e) {
+  // Star toggle
+  const starBtn = e.target.closest('.star-btn');
+  if (starBtn) {
+    if (starBtn.dataset.user !== _currentUser) return; // other person's star is read-only
+    toggleStar(starBtn.dataset.itemKey);
     return;
   }
 
-  container.innerHTML = places.map(p => `
-    <div class="user-place" data-id="${p.id}">
-      <div class="up-main">
-        <span class="up-cat up-cat--${p.category}">${CAT_LABEL[p.category] || p.category}</span>
-        <span class="up-name">${escape(p.name)}</span>
-        ${_editUnlocked ? `<button class="up-del" data-id="${p.id}" aria-label="Delete">&#215;</button>` : ''}
-      </div>
-      ${p.notes ? `<div class="up-notes">${escape(p.notes)}</div>` : ''}
-      <div class="up-footer">
-        <button class="up-status up-status--${p.status}" data-id="${p.id}" data-status="${p.status}">${STATUS_LABEL[p.status] || p.status}</button>
-        ${p.added_by ? `<span class="up-by">${escape(p.added_by)}</span>` : ''}
-      </div>
-    </div>
-  `).join('');
+  // Map pin button
+  const mapBtn = e.target.closest('.pi-map');
+  if (mapBtn) {
+    if (_editMode) {
+      showMapsSheet(mapBtn.dataset.itemKey, mapBtn.dataset.mapsUrl || '', mapBtn.dataset.isUser === '1');
+    } else {
+      const url = mapBtn.dataset.mapsUrl;
+      if (url) window.open(url, '_blank');
+    }
+    return;
+  }
 
-  // Status cycle (only when unlocked — tap to advance: want → been → loved → want)
-  container.querySelectorAll('.up-status').forEach(btn => {
-    btn.addEventListener('click', async () => {
-      if (!_editUnlocked) return;
-      const order = ['want', 'been', 'loved'];
-      const next  = order[(order.indexOf(btn.dataset.status) + 1) % 3];
-      await updateUserPlaceStatus(btn.dataset.id, next);
-    });
-  });
+  // Delete user-added item
+  const delBtn = e.target.closest('.pi-del');
+  if (delBtn) {
+    const row  = delBtn.closest('.places-item');
+    const name = row?.querySelector('.pi-text span')?.textContent?.trim() || 'this place';
+    if (!confirm(`Remove "${name}"?`)) return;
+    deleteUserPlace(delBtn.dataset.id);
+    return;
+  }
 
-  // Delete
-  container.querySelectorAll('.up-del').forEach(btn => {
-    btn.addEventListener('click', async (e) => {
-      e.stopPropagation();
-      const name = btn.closest('.user-place')?.querySelector('.up-name')?.textContent || 'this place';
-      if (!confirm(`Remove "${name}"?`)) return;
-      await deleteUserPlace(btn.dataset.id);
-    });
-  });
+  // Add spot button
+  const addBtn = e.target.closest('.add-spot-btn');
+  if (addBtn) {
+    showAddPlaceSheet(addBtn.dataset.city, addBtn.dataset.section);
+    return;
+  }
+
+  // Edit toggle (lock icon)
+  const editBtn = e.target.closest('#edit-toggle-btn');
+  if (editBtn) {
+    toggleEditMode();
+    return;
+  }
+
+  // User chip → switch user
+  const chip = e.target.closest('#user-chip');
+  if (chip) {
+    showNamePickerSheet(false);
+    return;
+  }
 }
 
 // ── Flight ticket stub (reused in Today + Refs) ──
@@ -1033,19 +1098,14 @@ function renderPlaces() {
   const cities = Object.keys(TRIP.cities);
   const el = document.getElementById('screen-places');
 
-  const lockSVG = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-    <rect x="3" y="11" width="18" height="11" rx="2"/>
-    <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
-  </svg>`;
-  const unlockSVG = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-    <rect x="3" y="11" width="18" height="11" rx="2"/>
-    <path d="M7 11V7a5 5 0 0 1 10 0"/>
-  </svg>`;
+  const lockSVG   = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>`;
+  const unlockSVG = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0"/></svg>`;
 
   // Header + sticky tab strip
   let h = `<div class="page-header">
     <span class="page-header__title">Places</span>
     <span class="page-header__sub">6 Destinations</span>
+    <button id="user-chip" class="user-chip user-chip--unknown" aria-label="Switch user">?</button>
     <button class="edit-toggle-btn" id="edit-toggle-btn" aria-label="Toggle editing">
       <span class="lock-icon lock-icon--locked">${lockSVG}</span>
       <span class="lock-icon lock-icon--unlocked">${unlockSVG}</span>
@@ -1056,9 +1116,10 @@ function renderPlaces() {
   </div>`;
 
   // City panels
-  cities.forEach((name, i) => {
+  cities.forEach((name, cityIdx) => {
     const city = TRIP.cities[name];
-    h += `<div class="city-panel${i === 0 ? ' active' : ''}" id="city-panel-${i}">`;
+    const slug = citySlug(name);
+    h += `<div class="city-panel${cityIdx === 0 ? ' active' : ''}" id="city-panel-${cityIdx}">`;
 
     // Polaroid or placeholder
     if (city.image) {
@@ -1088,44 +1149,46 @@ function renderPlaces() {
       </div>`;
     }
 
-    // Do
-    if (city.do && city.do.length) {
+    // Things to Do
+    const doItems  = city.do || [];
+    const eatItems = [...(city.eat || []), ...(city.drink || [])];
+
+    if (doItems.length) {
       h += `<div class="places-section">
         <div class="places-section__head">
           <span class="places-section__icon">&#10022;</span>
           <span class="places-section__label">Things to Do</span>
         </div>
-        ${city.do.map(item => {
+        ${doItems.map((item, i) => {
           const parts = item.split('|');
-          return `<div class="places-item">${escape(parts[0].trim())}${parts[1] ? `<em>&nbsp;&mdash;&nbsp;${escape(parts[1].trim())}</em>` : ''}</div>`;
+          const iKey  = hardcodedKey(name, 'do', i);
+          const meta  = _itemMeta[iKey];
+          const mUrl  = (meta && meta.maps_url) || '';
+          return renderPlaceItemHTML(parts[0].trim(), iKey, mUrl, false, parts[1] ? parts[1].trim() : '');
         }).join('')}
+        <div class="user-places-list" id="up-${slug}-do"></div>
+        <button class="add-spot-btn" data-city="${escape(name)}" data-section="do">+ Add</button>
       </div>`;
     }
 
-    // Eat & Drink combined
-    const eats = [...(city.eat || []), ...(city.drink || [])];
-    if (eats.length) {
+    // Eat & Drink
+    if (eatItems.length) {
       h += `<div class="places-section">
         <div class="places-section__head">
           <span class="places-section__icon">&#9675;</span>
           <span class="places-section__label">Eat &amp; Drink</span>
         </div>
-        ${eats.map(item => {
+        ${eatItems.map((item, i) => {
           const parts = item.split('|');
-          return `<div class="places-item">${escape(parts[0].trim())}${parts[1] ? `<em>&nbsp;&mdash;&nbsp;${escape(parts[1].trim())}</em>` : ''}</div>`;
+          const iKey  = hardcodedKey(name, 'eat', i);
+          const meta  = _itemMeta[iKey];
+          const mUrl  = (meta && meta.maps_url) || '';
+          return renderPlaceItemHTML(parts[0].trim(), iKey, mUrl, false, parts[1] ? parts[1].trim() : '');
         }).join('')}
+        <div class="user-places-list" id="up-${slug}-eat"></div>
+        <button class="add-spot-btn" data-city="${escape(name)}" data-section="eat">+ Add</button>
       </div>`;
     }
-
-    // Your Spots — user-added places (live from Supabase)
-    h += `<div class="places-section your-spots-section">
-      <div class="places-section__head">
-        <span class="places-section__icon">&#9670;</span>
-        <span class="places-section__label">Your Spots</span>
-        <button class="add-spot-btn" data-city="${escape(name)}" aria-label="Add a place">+ Add</button>
-      </div>
-      <div class="user-places-list" id="up-${citySlug(name)}"></div>
-    </div>`;
 
     h += '</div>'; // end city-panel
   });
@@ -1144,16 +1207,12 @@ function renderPlaces() {
     });
   });
 
-  // Edit toggle
-  el.querySelector('#edit-toggle-btn').addEventListener('click', toggleEditMode);
+  // Single delegated handler for all interactions
+  el.addEventListener('click', handlePlacesClick);
 
-  // Add spot buttons
-  el.querySelectorAll('.add-spot-btn').forEach(btn => {
-    btn.addEventListener('click', () => showAddPlaceSheet(btn.dataset.city));
-  });
-
-  // Apply current edit state + populate any already-loaded places
+  // Apply current state
   updateEditUI();
+  updateUserChip();
 }
 
 // ── Render: REFS ─────────────────────────────
