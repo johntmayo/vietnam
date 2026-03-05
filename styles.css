@@ -1575,3 +1575,161 @@ body::before {
   border-color: rgba(242, 169, 0, 0.70);
   color: #F2A900;
 }
+
+/* ═══════════════════════════════════════════════════
+   DAY PLANNING
+   ═══════════════════════════════════════════════════ */
+
+/* ── Calendar button on place items ── */
+.pi-cal {
+  display: inline-flex;
+  align-items: center;
+  background: none;
+  border: none;
+  padding: 2px 3px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  line-height: 0;
+  color: rgba(74, 64, 48, 0.4);
+  transition: color 0.15s;
+}
+.pi-cal svg { width: 12px; height: 12px; display: block; }
+.pi-cal.is-planned { color: var(--amber, #F2A900); }
+.pi-cal:active { opacity: 0.6; }
+
+/* ── Day picker sheet ── */
+.day-pick-list {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  max-height: 55vh;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.day-pick-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #0E0B07;
+  border: 1px solid #1E1A12;
+  border-radius: 6px;
+  padding: 10px 12px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: border-color 0.15s, background 0.15s;
+  text-align: left;
+  width: 100%;
+}
+.day-pick-row.is-planned {
+  background: rgba(242, 169, 0, 0.06);
+  border-color: rgba(242, 169, 0, 0.28);
+}
+.day-pick-row:active { background: rgba(242, 169, 0, 0.12); }
+
+.day-pick-date {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  color: #6A5A40;
+  flex-shrink: 0;
+  min-width: 64px;
+}
+.day-pick-row.is-planned .day-pick-date { color: #F2A900; }
+
+.day-pick-city {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 13px;
+  color: #4A3A28;
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.day-pick-row.is-planned .day-pick-city { color: #7A6040; }
+
+.day-pick-check {
+  font-size: 13px;
+  color: #F2A900;
+  opacity: 0;
+  transition: opacity 0.15s;
+  flex-shrink: 0;
+}
+.day-pick-row.is-planned .day-pick-check { opacity: 1; }
+
+/* ── Journey plan section (inside each day entry) ── */
+.j-plan {
+  margin-top: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.j-plan-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(242, 169, 0, 0.04);
+  border: 1px solid rgba(242, 169, 0, 0.10);
+  border-radius: 4px;
+  padding: 5px 8px;
+  transition: opacity 0.2s;
+}
+.j-plan-item.done { opacity: 0.38; }
+
+.j-plan-check {
+  background: none;
+  border: 1px solid #2E2518;
+  border-radius: 3px;
+  width: 15px;
+  height: 15px;
+  min-width: 15px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 9px;
+  color: transparent;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  padding: 0;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+.j-plan-item.done .j-plan-check {
+  background: rgba(242, 169, 0, 0.18);
+  border-color: rgba(242, 169, 0, 0.45);
+  color: #F2A900;
+}
+
+.j-plan-name {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 12px;
+  color: #7A6840;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  letter-spacing: 0.02em;
+}
+.j-plan-item.done .j-plan-name {
+  text-decoration: line-through;
+  color: #4A3A28;
+}
+
+.j-plan-remove {
+  background: none;
+  border: none;
+  color: #2E2010;
+  font-size: 15px;
+  line-height: 1;
+  padding: 0 2px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  flex-shrink: 0;
+  opacity: 0.5;
+}
+.j-plan-remove:active { color: #CC2E2E; opacity: 1; }
+
+/* Journey entries with nav targets get pointer cursor */
+.journey-entry[role="button"] { cursor: pointer; }

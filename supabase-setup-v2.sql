@@ -31,6 +31,23 @@ ALTER TABLE user_places ADD COLUMN IF NOT EXISTS maps_url TEXT DEFAULT '';
 UPDATE user_places SET category = 'eat' WHERE category IN ('food', 'bar', 'cafe');
 UPDATE user_places SET category = 'do'  WHERE category IN ('shop', 'activity');
 
+-- Day planning (assign place items to specific trip days)
+CREATE TABLE IF NOT EXISTS day_plans (
+  id         UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  date       TEXT NOT NULL,        -- '2026-03-10'
+  item_key   TEXT NOT NULL,        -- 'hoi-an-eat-0' or user place UUID
+  item_name  TEXT NOT NULL,        -- stored for display
+  city       TEXT NOT NULL,
+  section    TEXT NOT NULL,        -- 'do' or 'eat'
+  added_by   TEXT NOT NULL,
+  done       BOOLEAN DEFAULT false,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(date, item_key)
+);
+ALTER TABLE day_plans ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "public_access" ON day_plans FOR ALL USING (true) WITH CHECK (true);
+ALTER PUBLICATION supabase_realtime ADD TABLE day_plans;
+
 -- ============================================================
 --  Hardcoded item key reference
 --  Format: {city-slug}-{section}-{0-based-index}

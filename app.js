@@ -15,6 +15,7 @@ let _currentUser = localStorage.getItem('vn_user') || '';
 let _userPlaces  = [];      // local cache from DB
 let _stars       = [];      // [{item_key, user_name}]
 let _itemMeta    = {};      // {itemKey: {maps_url}}
+let _dayPlans    = [];      // [{id, date, item_key, item_name, city, section, done}]
 
 // ── Trip Data ────────────────────────────────
 const TRIP = {
@@ -517,17 +518,21 @@ async function initDB() {
 
 async function fetchAllData() {
   if (!_sb) return;
-  const [placesRes, starsRes, metaRes] = await Promise.all([
+  const [placesRes, starsRes, metaRes, plansRes] = await Promise.all([
     _sb.from('user_places').select('*').order('created_at'),
     _sb.from('stars').select('*'),
-    _sb.from('item_meta').select('*')
+    _sb.from('item_meta').select('*'),
+    _sb.from('day_plans').select('*').order('created_at')
   ]);
   if (placesRes.data) _userPlaces = placesRes.data;
   if (starsRes.data)  _stars      = starsRes.data;
   if (metaRes.data)   _itemMeta   = Object.fromEntries(metaRes.data.map(r => [r.item_key, r]));
+  if (plansRes.data)  _dayPlans   = plansRes.data;
   refreshAllUserPlaceSections();
   refreshAllStars();
   refreshAllMapIndicators();
+  refreshAllPlanButtons();
+  refreshJourneyPlans();
   updateEditUI();
   updateUserChip();
 }
@@ -566,6 +571,25 @@ function subscribeRealtime() {
       refreshAllMapIndicators();
     })
     .subscribe();
+
+  _sb.channel('vn_plans')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'day_plans' }, (payload) => {
+      if (payload.eventType === 'INSERT') {
+        if (!_dayPlans.find(p => p.id === payload.new.id)) {
+          _dayPlans.push(payload.new);
+          refreshAllPlanButtons();
+          refreshJourneyPlans();
+        }
+      } else if (payload.eventType === 'UPDATE') {
+        const i = _dayPlans.findIndex(p => p.id === payload.new.id);
+        if (i > -1) { _dayPlans[i] = payload.new; refreshJourneyPlans(); }
+      } else if (payload.eventType === 'DELETE') {
+        const before = _dayPlans.length;
+        _dayPlans = _dayPlans.filter(p => p.id !== payload.old.id);
+        if (_dayPlans.length !== before) { refreshAllPlanButtons(); refreshJourneyPlans(); }
+      }
+    })
+    .subscribe();
 }
 
 async function addUserPlace(city, name, section, notes, mapsUrl) {
@@ -579,6 +603,42 @@ async function deleteUserPlace(id) {
   if (!_sb) return;
   const { error } = await _sb.from('user_places').delete().eq('id', id);
   if (error) console.error('Delete failed:', error);
+}
+
+async function addDayPlan(date, itemKey, itemName, city, section) {
+  if (!_sb || !_currentUser) return;
+  const { data, error } = await _sb.from('day_plans')
+    .insert({ date, item_key: itemKey, item_name: itemName, city, section, added_by: _currentUser, done: false })
+    .select().single();
+  if (!error && data) {
+    if (!_dayPlans.find(p => p.id === data.id)) _dayPlans.push(data);
+    refreshAllPlanButtons();
+    refreshJourneyPlans();
+  } else if (error) {
+    console.error('Plan add failed:', error);
+  }
+}
+
+async function removeDayPlan(id) {
+  if (!_sb) return;
+  const { error } = await _sb.from('day_plans').delete().eq('id', id);
+  if (!error) {
+    _dayPlans = _dayPlans.filter(p => p.id !== id);
+    refreshAllPlanButtons();
+    refreshJourneyPlans();
+  } else {
+    console.error('Plan delete failed:', error);
+  }
+}
+
+async function toggleDayPlanDone(id, done) {
+  if (!_sb) return;
+  const { error } = await _sb.from('day_plans').update({ done }).eq('id', id);
+  if (!error) {
+    const plan = _dayPlans.find(p => p.id === id);
+    if (plan) plan.done = done;
+    refreshJourneyPlans();
+  }
 }
 
 async function toggleStar(itemKey) {
@@ -649,8 +709,30 @@ function refreshAllUserPlaceSections() {
 function renderUserPlacesInto(container, cityName, section) {
   const places = _userPlaces.filter(p => p.city === cityName && p.category === section);
   container.innerHTML = places.map(p =>
-    renderPlaceItemHTML(p.name, p.id, p.maps_url || '', true, p.notes || '')
+    renderPlaceItemHTML(p.name, p.id, p.maps_url || '', true, p.notes || '', cityName, section)
   ).join('');
+}
+
+function refreshAllPlanButtons() {
+  document.querySelectorAll('.pi-cal[data-item-key]').forEach(btn => {
+    btn.classList.toggle('is-planned', _dayPlans.some(p => p.item_key === btn.dataset.itemKey));
+  });
+}
+
+function refreshJourneyPlans() {
+  TRIP.itinerary.forEach(e => {
+    const container = document.getElementById(`j-plan-${e.date}`);
+    if (!container) return;
+    const plans = _dayPlans.filter(p => p.date === e.date);
+    if (!plans.length) { container.innerHTML = ''; return; }
+    container.innerHTML = plans.map(p => `
+      <div class="j-plan-item${p.done ? ' done' : ''}" data-plan-id="${escape(p.id)}">
+        <button class="j-plan-check" data-plan-id="${escape(p.id)}" aria-label="${p.done ? 'Mark undone' : 'Mark done'}">&#10003;</button>
+        <span class="j-plan-name">${escape(p.item_name)}</span>
+        <button class="j-plan-remove" data-plan-id="${escape(p.id)}" aria-label="Remove from plan">&#215;</button>
+      </div>
+    `).join('');
+  });
 }
 
 // ── Edit mode ─────────────────────────────────────────────────
@@ -761,6 +843,48 @@ function showAddPlaceSheet(cityName, section) {
   setTimeout(() => document.getElementById('place-name')?.focus(), 350);
 }
 
+function showDayPickerSheet(itemKey, itemName, city, section) {
+  const days = TRIP.itinerary.map(e => {
+    const isPlanned = _dayPlans.some(p => p.item_key === itemKey && p.date === e.date);
+    const dt = fmtShort(e.date);
+    const d  = new Date(e.date + 'T12:00:00');
+    const wd = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][d.getDay()];
+    return { e, isPlanned, label: `${wd} ${dt.mon} ${dt.day}` };
+  });
+
+  showSheet(`
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">Plan this</div>
+    <div class="sheet-hint">${escape(itemName)}</div>
+    <div class="day-pick-list">
+      ${days.map(({ e, isPlanned, label }) => `
+        <button class="day-pick-row${isPlanned ? ' is-planned' : ''}" data-date="${escape(e.date)}">
+          <span class="day-pick-date">${label}</span>
+          <span class="day-pick-city">${escape(e.title.split('\n')[0])}</span>
+          <span class="day-pick-check">&#10003;</span>
+        </button>
+      `).join('')}
+    </div>
+  `);
+
+  document.querySelectorAll('.day-pick-row').forEach(row => {
+    row.addEventListener('click', async () => {
+      const date = row.dataset.date;
+      const isPlanned = row.classList.contains('is-planned');
+      if (isPlanned) {
+        const plan = _dayPlans.find(p => p.item_key === itemKey && p.date === date);
+        if (plan) {
+          row.classList.remove('is-planned');
+          await removeDayPlan(plan.id);
+        }
+      } else {
+        row.classList.add('is-planned');
+        await addDayPlan(date, itemKey, itemName, city, section);
+      }
+    });
+  });
+}
+
 function showMapsSheet(itemKey, currentUrl, isUserPlace) {
   showSheet(`
     <div class="sheet-title">Maps link</div>
@@ -779,18 +903,21 @@ function showMapsSheet(itemKey, currentUrl, isUserPlace) {
 }
 
 // ── Place item HTML helper ─────────────────────────────────────
-const MAP_SVG = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-8-6.5-8-12a8 8 0 0 1 16 0c0 5.5-8 12-8 12z"/><circle cx="12" cy="9" r="2.5"/></svg>`;
+const MAP_SVG  = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-8-6.5-8-12a8 8 0 0 1 16 0c0 5.5-8 12-8 12z"/><circle cx="12" cy="9" r="2.5"/></svg>`;
+const PLAN_SVG = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/><line x1="8" y1="15" x2="16" y2="15"/></svg>`;
 
-function renderPlaceItemHTML(name, itemKey, mapsUrl, isUserAdded, notes) {
+function renderPlaceItemHTML(name, itemKey, mapsUrl, isUserAdded, notes, city, section) {
   const notesPart = notes ? `<em class="pi-notes">&nbsp;&mdash;&nbsp;${escape(notes)}</em>` : '';
   const delBtn    = isUserAdded
     ? `<button class="pi-del" data-id="${escape(itemKey)}" aria-label="Delete">&#215;</button>`
     : '';
+  const isPlanned = _dayPlans.some(p => p.item_key === itemKey);
   return `<div class="places-item" data-item-key="${escape(itemKey)}">
     <span class="pi-text"><span>${escape(name)}</span>${notesPart}</span>
     <span class="pi-actions">
       <button class="star-btn star-btn--john" data-item-key="${escape(itemKey)}" data-user="john" aria-label="John starred">★<span>J</span></button>
       <button class="star-btn star-btn--stef" data-item-key="${escape(itemKey)}" data-user="stef" aria-label="Stef starred">★<span>S</span></button>
+      <button class="pi-cal${isPlanned ? ' is-planned' : ''}" data-item-key="${escape(itemKey)}" data-city="${escape(city || '')}" data-section="${escape(section || '')}" aria-label="Plan this">${PLAN_SVG}</button>
       <button class="pi-map${mapsUrl ? ' has-link' : ''}" data-item-key="${escape(itemKey)}" data-maps-url="${escape(mapsUrl)}" data-is-user="${isUserAdded ? '1' : '0'}" aria-label="Maps">${MAP_SVG}</button>
       ${delBtn}
     </span>
@@ -804,6 +931,15 @@ function handlePlacesClick(e) {
   if (starBtn) {
     if (starBtn.dataset.user !== _currentUser) return; // other person's star is read-only
     toggleStar(starBtn.dataset.itemKey);
+    return;
+  }
+
+  // Calendar / plan button
+  const calBtn = e.target.closest('.pi-cal');
+  if (calBtn) {
+    const row      = calBtn.closest('.places-item');
+    const itemName = row?.querySelector('.pi-text > span')?.textContent?.trim() || '';
+    showDayPickerSheet(calBtn.dataset.itemKey, itemName, calBtn.dataset.city, calBtn.dataset.section);
     return;
   }
 
@@ -849,6 +985,31 @@ function handlePlacesClick(e) {
     showNamePickerSheet(false);
     return;
   }
+}
+
+// ── Event delegation for Journey screen ───────────────────────
+function handleJourneyClick(e) {
+  // Plan: check/done toggle
+  const checkBtn = e.target.closest('.j-plan-check');
+  if (checkBtn) {
+    const plan = _dayPlans.find(p => p.id === checkBtn.dataset.planId);
+    if (plan) toggleDayPlanDone(plan.id, !plan.done);
+    return;
+  }
+
+  // Plan: remove
+  const removeBtn = e.target.closest('.j-plan-remove');
+  if (removeBtn) {
+    removeDayPlan(removeBtn.dataset.planId);
+    return;
+  }
+
+  // Journey navigation — only if click didn't hit a plan element
+  const row = e.target.closest('.journey-entry');
+  if (!row) return;
+  const cityIdx = row.dataset.cityIdx;
+  if (cityIdx !== undefined && cityIdx !== '') { navigateToCity(parseInt(cityIdx, 10)); return; }
+  if (row.dataset.navRefs !== undefined) { navigate('refs'); return; }
 }
 
 // ── Flight ticket stub (reused in Today + Refs) ──
@@ -1046,13 +1207,18 @@ function renderJourney() {
   </div><div class="journey-list">`;
 
   TRIP.itinerary.forEach((e, i) => {
-    const d      = dayOf(e.date);
-    const isNow  = d.getTime() === now.getTime();
-    const isPast = d < now;
-    const dt     = fmtShort(e.date);
-    const label  = BADGE_LABELS[e.type];
+    const d        = dayOf(e.date);
+    const isNow    = d.getTime() === now.getTime();
+    const isPast   = d < now;
+    const dt       = fmtShort(e.date);
+    const label    = BADGE_LABELS[e.type];
+    const cityIdx  = cityIdxForEntry(e);
+    const hasCity  = cityIdx !== -1;
+    const isFlight = e.type === 'flight';
 
-    h += `<div class="journey-entry${isNow ? ' is-today' : ''}${isPast ? ' is-past' : ''}">
+    h += `<div class="journey-entry${isNow ? ' is-today' : ''}${isPast ? ' is-past' : ''}"
+      ${hasCity ? `data-city-idx="${cityIdx}" role="button"` : ''}
+      ${!hasCity && isFlight ? 'data-nav-refs="1" role="button"' : ''}>
       <div class="j-date">
         <div class="j-date__mon">${dt.mon}</div>
         <div class="j-date__day">${dt.day}</div>
@@ -1066,6 +1232,7 @@ function renderJourney() {
           ${e.travel ? `<span class="j-travel">${escape(e.travel)}</span>` : ''}
         </div>
         ${e.notes ? `<div class="j-note">${escape(e.notes)}</div>` : ''}
+        <div class="j-plan" id="j-plan-${e.date}"></div>
       </div>
     </div>`;
   });
@@ -1073,24 +1240,16 @@ function renderJourney() {
   h += '</div>';
   el.innerHTML = h;
 
-  // Tappable rows: city destinations → Places, flight rows → Refs
-  el.querySelectorAll('.journey-entry').forEach((row, i) => {
-    const entry = TRIP.itinerary[i];
-    const cityIdx = cityIdxForEntry(entry);
-    if (cityIdx !== -1) {
-      row.setAttribute('role', 'button');
-      row.addEventListener('click', () => navigateToCity(cityIdx));
-    } else if (entry.type === 'flight') {
-      row.setAttribute('role', 'button');
-      row.addEventListener('click', () => navigate('refs'));
-    }
-  });
+  // Single delegated handler for plan interactions + navigation
+  el.addEventListener('click', handleJourneyClick);
 
   // Scroll today into view after paint
   requestAnimationFrame(() => {
     const todayEl = el.querySelector('.is-today');
     if (todayEl) todayEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
   });
+
+  refreshJourneyPlans();
 }
 
 // ── Render: PLACES ───────────────────────────
@@ -1164,7 +1323,7 @@ function renderPlaces() {
           const iKey  = hardcodedKey(name, 'do', i);
           const meta  = _itemMeta[iKey];
           const mUrl  = (meta && meta.maps_url) || '';
-          return renderPlaceItemHTML(parts[0].trim(), iKey, mUrl, false, parts[1] ? parts[1].trim() : '');
+          return renderPlaceItemHTML(parts[0].trim(), iKey, mUrl, false, parts[1] ? parts[1].trim() : '', name, 'do');
         }).join('')}
         <div class="user-places-list" id="up-${slug}-do"></div>
         <button class="add-spot-btn" data-city="${escape(name)}" data-section="do">+ Add</button>
@@ -1183,7 +1342,7 @@ function renderPlaces() {
           const iKey  = hardcodedKey(name, 'eat', i);
           const meta  = _itemMeta[iKey];
           const mUrl  = (meta && meta.maps_url) || '';
-          return renderPlaceItemHTML(parts[0].trim(), iKey, mUrl, false, parts[1] ? parts[1].trim() : '');
+          return renderPlaceItemHTML(parts[0].trim(), iKey, mUrl, false, parts[1] ? parts[1].trim() : '', name, 'eat');
         }).join('')}
         <div class="user-places-list" id="up-${slug}-eat"></div>
         <button class="add-spot-btn" data-city="${escape(name)}" data-section="eat">+ Add</button>
