@@ -181,7 +181,12 @@ const TRIP = {
         'Cu Chi Tunnels (half day)',
         'Ho Chi Minh City Museum of Fine Arts',
         'Tan Dinh Pink Church',
-        'District 7 — Crescent Lake & Park, Korean influences'
+        'District 7 — Crescent Lake & Park, Korean influences',
+        'Hidden alley coffee house crawl',
+        'Vintage electronics / retro market browsing',
+        'Bitexco Tower skydeck at sunset',
+        'Golden Dragon water puppet show',
+        'Quiet morning in Tao Đàn Park'
       ],
       eat: [
         'Hum | District 1 — high end, refined',
@@ -214,7 +219,12 @@ const TRIP = {
         'Buy linen clothes',
         'Hidden alley coffee shops',
         'Old Town at night — Lantern Walk: Japanese Bridge to riverfront',
-        'History of Hoi An evening show'
+        'History of Hoi An evening show',
+        'Sunrise photo walk in Old Town',
+        'Vietnamese calligraphy or lantern workshop',
+        'Tailor visit: simple linen outfits',
+        'Boat ride on Thu Bon at dusk',
+        'Tea or coffee on a riverside balcony'
       ],
       eat: [
         'Chay Dam | Farm to table, garden setting in Tra Que Vegetable Village',
@@ -236,7 +246,12 @@ const TRIP = {
         'Arrive via scooter ~4–5 PM over Hai Van Pass',
         'Explore the Imperial Citadel and royal tombs',
         'Dong Ba Market',
-        'Thien Mu Pagoda on the Perfume River'
+        'Thien Mu Pagoda on the Perfume River',
+        'Cyclo ride along Perfume River',
+        'Sunset at Thanh Toan tile bridge',
+        'Paper flower workshop in Thanh Tien Village',
+        'Explore lesser-known temples in Kim Long',
+        'Night walk around Truong Tien Bridge lights'
       ],
       eat: [
         'Bún bò Huế — the city\'s signature spicy beef noodle soup',
@@ -258,7 +273,12 @@ const TRIP = {
         'Dark Cave — zip line, kayak, mud bath',
         'Phong Nha Cave by boat — the original, underground river',
         'Phong Nha-Kẻ Bàng National Park hiking',
-        'Best for: caves, silence, nature photographers'
+        'Best for: caves, silence, nature photographers',
+        'Slow Son River walk at golden hour',
+        'Kayak rental on the river, no tour',
+        'Sunset beers on a riverside terrace',
+        'Short jungle walk near village paths',
+        'Night sky / stargazing away from town lights'
       ],
       eat: [
         'The Pub with Cold Beer — a whole experience. Swim + float in the river. Allow 4 hours.',
@@ -278,7 +298,12 @@ const TRIP = {
         'Row to Trang An — UNESCO-protected, dramatic caves | 7–9 AM is ideal. Buy ticket at Trang An wharf. ~3 hours. Route 3 (Dot Cave + steps) is the best, Route 2 is balanced.',
         'Sunset at Mua Cave viewpoint — 500 steps, panoramic views over the valley',
         'Bike ride through rice paddies and village lanes',
-        'Hoa Lu Ancient Capital — Vietnam\'s 10th-century former capital'
+        'Hoa Lu Ancient Capital — Vietnam\'s 10th-century former capital',
+        'Early-morning mist walk through rice fields',
+        'Visit Bich Dong Pagoda caves and temples',
+        'Ride bicycle to a random village café',
+        'Side trip to Hoa Lu ancient capital ruins',
+        'Evening roadside tea with locals'
       ],
       eat: [
         'Goat and mountain snail — local specialties in Ninh Binh',
@@ -306,7 +331,12 @@ const TRIP = {
         'Imperial Citadel',
         'Women\'s Museum',
         'Buy baskets, silk, and lacquerware at markets',
-        'Sit at a bia hơi corner with a cold beer (Ta Hien & Luong Ngoc Quyen)'
+        'Sit at a bia hơi corner with a cold beer (Ta Hien & Luong Ngoc Quyen)',
+        'Train Street coffee while train passes',
+        'Old Quarter alleyway food crawl',
+        'Sunset walk around West Lake',
+        'Women\'s Museum quick deep-dive visit',
+        'Tiny stool bia hơi corner hangout'
       ],
       eat: [
         'Egg coffee at Giang Cafe — supposed to be the best',
