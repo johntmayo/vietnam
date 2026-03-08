@@ -565,6 +565,7 @@ async function fetchAllData() {
   refreshAllMapIndicators();
   refreshAllPlanButtons();
   refreshJourneyPlans();
+  refreshTodayPlans();
   updateEditUI();
   updateUserChip();
 }
@@ -611,14 +612,15 @@ function subscribeRealtime() {
           _dayPlans.push(payload.new);
           refreshAllPlanButtons();
           refreshJourneyPlans();
+          refreshTodayPlans();
         }
       } else if (payload.eventType === 'UPDATE') {
         const i = _dayPlans.findIndex(p => p.id === payload.new.id);
-        if (i > -1) { _dayPlans[i] = payload.new; refreshJourneyPlans(); }
+        if (i > -1) { _dayPlans[i] = payload.new; refreshJourneyPlans(); refreshTodayPlans(); }
       } else if (payload.eventType === 'DELETE') {
         const before = _dayPlans.length;
         _dayPlans = _dayPlans.filter(p => p.id !== payload.old.id);
-        if (_dayPlans.length !== before) { refreshAllPlanButtons(); refreshJourneyPlans(); }
+        if (_dayPlans.length !== before) { refreshAllPlanButtons(); refreshJourneyPlans(); refreshTodayPlans(); }
       }
     })
     .subscribe();
@@ -646,6 +648,7 @@ async function addDayPlan(date, itemKey, itemName, city, section) {
     if (!_dayPlans.find(p => p.id === data.id)) _dayPlans.push(data);
     refreshAllPlanButtons();
     refreshJourneyPlans();
+    refreshTodayPlans();
   } else if (error) {
     console.error('Plan add failed:', error);
   }
@@ -658,6 +661,7 @@ async function removeDayPlan(id) {
     _dayPlans = _dayPlans.filter(p => p.id !== id);
     refreshAllPlanButtons();
     refreshJourneyPlans();
+    refreshTodayPlans();
   } else {
     console.error('Plan delete failed:', error);
   }
@@ -670,6 +674,7 @@ async function toggleDayPlanDone(id, done) {
     const plan = _dayPlans.find(p => p.id === id);
     if (plan) plan.done = done;
     refreshJourneyPlans();
+    refreshTodayPlans();
   }
 }
 
@@ -765,6 +770,38 @@ function refreshJourneyPlans() {
       </div>
     `).join('');
   });
+}
+
+function refreshTodayPlans() {
+  const container = document.getElementById('today-plan-container');
+  const block = document.getElementById('today-plan-block');
+  if (!container || !block) return;
+  const p = getTripPhase();
+  if (p.phase !== 'during') return;
+  const plans = _dayPlans.filter(pl => pl.date === p.entry.date);
+  if (!plans.length) { block.style.display = 'none'; container.innerHTML = ''; return; }
+  block.style.display = '';
+  container.innerHTML = plans.map(pl => `
+    <div class="j-plan-item${pl.done ? ' done' : ''}" data-plan-id="${escape(pl.id)}">
+      <button class="j-plan-check" data-plan-id="${escape(pl.id)}" aria-label="${pl.done ? 'Mark undone' : 'Mark done'}">&#10003;</button>
+      <span class="j-plan-name">${escape(pl.item_name)}</span>
+      <button class="j-plan-remove" data-plan-id="${escape(pl.id)}" aria-label="Remove from plan">&#215;</button>
+    </div>
+  `).join('');
+}
+
+function handleTodayPlanClick(e) {
+  const checkBtn = e.target.closest('.j-plan-check');
+  if (checkBtn) {
+    const plan = _dayPlans.find(p => p.id === checkBtn.dataset.planId);
+    if (plan) toggleDayPlanDone(plan.id, !plan.done);
+    return;
+  }
+  const removeBtn = e.target.closest('.j-plan-remove');
+  if (removeBtn) {
+    removeDayPlan(removeBtn.dataset.planId);
+    return;
+  }
 }
 
 // ── Edit mode ─────────────────────────────────────────────────
@@ -1201,6 +1238,11 @@ function renderToday() {
       </div>`;
     }
 
+    h += `<div class="today-block" id="today-plan-block" style="display:none;">
+      <div class="block-label">Today&rsquo;s Plan</div>
+      <div id="today-plan-container" class="j-plan"></div>
+    </div>`;
+
   } else {
     h += `<div class="trip-done">
       <div class="trip-done__heading">Trip Complete.</div>
@@ -1226,6 +1268,12 @@ function renderToday() {
     stamp.classList.add('stamp--tappable');
     stamp.addEventListener('click', ev => { ev.stopPropagation(); navigate('refs'); });
   });
+
+  // Plan item interactions (check/remove)
+  el.addEventListener('click', handleTodayPlanClick);
+
+  // Populate today's plan items
+  refreshTodayPlans();
 }
 
 // ── Render: JOURNEY ──────────────────────────
