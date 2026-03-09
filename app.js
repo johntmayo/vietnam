@@ -1546,12 +1546,54 @@ function renderRefs() {
     h += '</div>';
   });
 
+  // Currency converter — rate locked Mar 9, 2026
+  const USD_TO_VND = 25370;
+  h += `<div class="refs-section currency-converter">
+    <div class="refs-city">Currency <span>1 USD = ${USD_TO_VND.toLocaleString()} VND &middot; locked Mar 9</span></div>
+    <div class="currency-row">
+      <div class="currency-field">
+        <label class="currency-label">USD $</label>
+        <input id="cc-usd" class="currency-input" type="number" inputmode="decimal" placeholder="0" min="0">
+      </div>
+      <div class="currency-equals">=</div>
+      <div class="currency-field">
+        <label class="currency-label">VND ₫</label>
+        <input id="cc-vnd" class="currency-input" type="number" inputmode="decimal" placeholder="0" min="0">
+      </div>
+    </div>
+    <div class="currency-quick">
+      ${[1,5,10,20,50,100].map(d => `<button class="currency-quick-btn" data-usd="${d}">$${d}</button>`).join('')}
+    </div>
+  </div>`;
+
   h += `<div class="app-refresh">
     <button id="force-refresh-btn" class="force-refresh-btn">Refresh app</button>
     <span class="app-version">v${APP_VERSION}</span>
   </div>`;
 
   el.innerHTML = h;
+
+  // Currency converter interactions
+  const ccUsd = document.getElementById('cc-usd');
+  const ccVnd = document.getElementById('cc-vnd');
+  const USD_VND_RATE = 25370;
+  if (ccUsd && ccVnd) {
+    ccUsd.addEventListener('input', () => {
+      const v = parseFloat(ccUsd.value);
+      ccVnd.value = isNaN(v) ? '' : Math.round(v * USD_VND_RATE).toLocaleString('en-US', {useGrouping: false});
+    });
+    ccVnd.addEventListener('input', () => {
+      const v = parseFloat(ccVnd.value);
+      ccUsd.value = isNaN(v) ? '' : (v / USD_VND_RATE).toFixed(2);
+    });
+    document.querySelectorAll('.currency-quick-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const usd = parseFloat(btn.dataset.usd);
+        ccUsd.value = usd;
+        ccVnd.value = Math.round(usd * USD_VND_RATE).toLocaleString('en-US', {useGrouping: false});
+      });
+    });
+  }
 
   document.getElementById('force-refresh-btn')?.addEventListener('click', async () => {
     const btn = document.getElementById('force-refresh-btn');

@@ -1734,6 +1734,73 @@ body::before {
 /* Journey entries with nav targets get pointer cursor */
 .journey-entry[role="button"] { cursor: pointer; }
 
+/* ── Currency Converter (Refs tab) ── */
+.currency-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 14px 0 12px;
+}
+.currency-field {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.currency-label {
+  font-family: var(--display);
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: var(--amber);
+  text-transform: uppercase;
+}
+.currency-input {
+  font-family: 'Courier Prime', monospace;
+  font-size: 1.25rem;
+  color: var(--text);
+  background: var(--surface-2);
+  border: 1px solid var(--surface-3);
+  border-radius: 4px;
+  padding: 10px;
+  width: 100%;
+  box-sizing: border-box;
+  -moz-appearance: textfield;
+  outline: none;
+  transition: border-color 0.15s;
+}
+.currency-input::-webkit-outer-spin-button,
+.currency-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.currency-input:focus { border-color: var(--amber-dim); }
+.currency-equals {
+  font-family: var(--display);
+  font-size: 1.4rem;
+  font-weight: 900;
+  color: var(--text-dim);
+  padding-top: 20px;
+  flex-shrink: 0;
+}
+.currency-quick {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.currency-quick-btn {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  color: var(--amber);
+  background: transparent;
+  border: 1px solid var(--amber-dim);
+  border-radius: 3px;
+  padding: 5px 10px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: background 0.12s;
+}
+.currency-quick-btn:active { background: rgba(242, 169, 0, 0.15); }
+
 /* ── App refresh button (Refs tab footer) ── */
 .app-refresh {
   display: flex;
