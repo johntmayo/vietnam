@@ -1548,21 +1548,25 @@ function renderRefs() {
 
   // Currency converter — rate locked Mar 9, 2026
   const USD_TO_VND = 25370;
+  const VND_QUICK = [50000, 100000, 200000, 500000, 1000000];
   h += `<div class="refs-section currency-converter">
     <div class="refs-city">Currency <span>1 USD = ${USD_TO_VND.toLocaleString()} VND &middot; locked Mar 9</span></div>
-    <div class="currency-row">
-      <div class="currency-field">
+    <div class="currency-columns">
+      <div class="currency-col">
         <label class="currency-label">USD $</label>
         <input id="cc-usd" class="currency-input" type="number" inputmode="decimal" placeholder="0" min="0">
+        <div class="currency-quick">
+          ${[1,5,10,20,50,100].map(d => `<button class="currency-quick-btn" data-usd="${d}">$${d}</button>`).join('')}
+        </div>
       </div>
       <div class="currency-equals">=</div>
-      <div class="currency-field">
+      <div class="currency-col">
         <label class="currency-label">VND ₫</label>
-        <input id="cc-vnd" class="currency-input" type="number" inputmode="decimal" placeholder="0" min="0">
+        <input id="cc-vnd" class="currency-input currency-input--text" type="text" inputmode="numeric" placeholder="0">
+        <div class="currency-quick">
+          ${VND_QUICK.map(v => `<button class="currency-quick-btn" data-vnd="${v}">${v >= 1000000 ? (v/1000000)+'M' : (v/1000)+'k'}</button>`).join('')}
+        </div>
       </div>
-    </div>
-    <div class="currency-quick">
-      ${[1,5,10,20,50,100].map(d => `<button class="currency-quick-btn" data-usd="${d}">$${d}</button>`).join('')}
     </div>
   </div>`;
 
@@ -1577,20 +1581,29 @@ function renderRefs() {
   const ccUsd = document.getElementById('cc-usd');
   const ccVnd = document.getElementById('cc-vnd');
   const USD_VND_RATE = 25370;
+  const fmtVnd = n => Math.round(n).toLocaleString('en-US');
+  const parseVnd = s => parseFloat(String(s).replace(/,/g, ''));
   if (ccUsd && ccVnd) {
     ccUsd.addEventListener('input', () => {
       const v = parseFloat(ccUsd.value);
-      ccVnd.value = isNaN(v) ? '' : Math.round(v * USD_VND_RATE).toLocaleString('en-US', {useGrouping: false});
+      ccVnd.value = isNaN(v) ? '' : fmtVnd(v * USD_VND_RATE);
     });
     ccVnd.addEventListener('input', () => {
-      const v = parseFloat(ccVnd.value);
+      const v = parseVnd(ccVnd.value);
       ccUsd.value = isNaN(v) ? '' : (v / USD_VND_RATE).toFixed(2);
     });
-    document.querySelectorAll('.currency-quick-btn').forEach(btn => {
+    document.querySelectorAll('.currency-quick-btn[data-usd]').forEach(btn => {
       btn.addEventListener('click', () => {
         const usd = parseFloat(btn.dataset.usd);
         ccUsd.value = usd;
-        ccVnd.value = Math.round(usd * USD_VND_RATE).toLocaleString('en-US', {useGrouping: false});
+        ccVnd.value = fmtVnd(usd * USD_VND_RATE);
+      });
+    });
+    document.querySelectorAll('.currency-quick-btn[data-vnd]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const vnd = parseFloat(btn.dataset.vnd);
+        ccVnd.value = fmtVnd(vnd);
+        ccUsd.value = (vnd / USD_VND_RATE).toFixed(2);
       });
     });
   }

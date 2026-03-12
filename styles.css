@@ -1735,17 +1735,17 @@ body::before {
 .journey-entry[role="button"] { cursor: pointer; }
 
 /* ── Currency Converter (Refs tab) ── */
-.currency-row {
+.currency-columns {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 10px;
-  margin: 14px 0 12px;
+  margin: 14px 0 4px;
 }
-.currency-field {
+.currency-col {
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 8px;
 }
 .currency-label {
   font-family: var(--display);
@@ -1777,7 +1777,7 @@ body::before {
   font-size: 1.4rem;
   font-weight: 900;
   color: var(--text-dim);
-  padding-top: 20px;
+  padding-top: 26px;
   flex-shrink: 0;
 }
 .currency-quick {
@@ -1794,7 +1794,7 @@ body::before {
   background: transparent;
   border: 1px solid var(--amber-dim);
   border-radius: 3px;
-  padding: 5px 10px;
+  padding: 5px 8px;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
   transition: background 0.12s;
