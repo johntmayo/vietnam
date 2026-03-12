@@ -1570,6 +1570,21 @@ function renderRefs() {
     </div>
   </div>`;
 
+  // World clock
+  const CLOCKS = [
+    { label: 'Los Angeles', tz: 'America/Los_Angeles' },
+    { label: 'Boston',      tz: 'America/New_York' },
+  ];
+  h += `<div class="refs-section world-clock">
+    <div class="refs-city">World Clock</div>
+    <div class="clock-list">
+      ${CLOCKS.map(c => `<div class="clock-row">
+        <span class="clock-city">${c.label}</span>
+        <span class="clock-time" data-tz="${c.tz}">--:-- --</span>
+      </div>`).join('')}
+    </div>
+  </div>`;
+
   h += `<div class="app-refresh">
     <button id="force-refresh-btn" class="force-refresh-btn">Refresh app</button>
     <span class="app-version">v${APP_VERSION}</span>
@@ -1607,6 +1622,23 @@ function renderRefs() {
       });
     });
   }
+
+  // World clock — ticks every second
+  const tickClocks = () => {
+    const now = new Date();
+    document.querySelectorAll('.clock-time[data-tz]').forEach(el => {
+      el.textContent = now.toLocaleTimeString('en-US', {
+        timeZone: el.dataset.tz,
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true
+      });
+    });
+  };
+  tickClocks();
+  const _clockInterval = setInterval(tickClocks, 1000);
+  // Clear interval if user navigates away
+  el.addEventListener('remove', () => clearInterval(_clockInterval), { once: true });
 
   document.getElementById('force-refresh-btn')?.addEventListener('click', async () => {
     const btn = document.getElementById('force-refresh-btn');
