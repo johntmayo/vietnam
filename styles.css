@@ -476,6 +476,49 @@ body::before {
   line-height: 1.7;
 }
 
+.day-one-btn {
+  margin-top: 32px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 22px;
+  background: transparent;
+  border: 1px solid rgba(242,169,0,0.35);
+  border-radius: 100px;
+  color: var(--amber);
+  font-family: var(--mono);
+  font-size: 0.78rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s;
+}
+.day-one-btn:hover,
+.day-one-btn:active {
+  background: rgba(242,169,0,0.08);
+  border-color: var(--amber);
+}
+
+.day-one-exit-btn {
+  display: inline-flex;
+  align-items: center;
+  margin-top: 14px;
+  padding: 5px 14px;
+  background: rgba(242,169,0,0.12);
+  border: 1px solid rgba(242,169,0,0.3);
+  border-radius: 100px;
+  color: var(--amber);
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.day-one-exit-btn:hover,
+.day-one-exit-btn:active {
+  background: rgba(242,169,0,0.2);
+}
+
 /* ============================================
    JOURNEY SCREEN — Departure Board
    ============================================ */

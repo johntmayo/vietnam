@@ -430,7 +430,9 @@ function dayOf(dateStr) {
 }
 
 function getTripPhase() {
-  const now = today0();
+  const now = _dayOneMode
+    ? (() => { const d = new Date(TRIP_START); d.setHours(0,0,0,0); return d; })()
+    : today0();
   const start = new Date(TRIP_START); start.setHours(0,0,0,0);
   const end   = new Date(TRIP_END);   end.setHours(23,59,59,999);
 
@@ -495,6 +497,15 @@ function markupOverview(str) {
 // 10:50 AM PST (UTC-8) on Fri Mar 6 2026 = 18:50:00 UTC
 const DEPARTURE_UTC = new Date('2026-03-06T18:50:00Z');
 let _cdInterval = null;
+let _dayOneMode  = localStorage.getItem('vn_day1') === '1';
+
+function toggleDayOneMode() {
+  _dayOneMode = !_dayOneMode;
+  localStorage.setItem('vn_day1', _dayOneMode ? '1' : '0');
+  if (_cdInterval) { clearInterval(_cdInterval); _cdInterval = null; }
+  renderToday();
+  renderJourney();
+}
 
 function startCountdown() {
   function pad(n) { return String(n).padStart(2, '0'); }
@@ -1181,6 +1192,7 @@ function renderToday() {
       <div class="today-bignum">${dt.day}</div>
       <div class="today-city${cityIdx !== -1 ? ' today-city--linked' : ''}"${cityIdx !== -1 ? ` data-city-idx="${cityIdx}"` : ''}>${e.title.split('\n')[0]}</div>
       <div class="today-date">${fmtLong(e.date)}</div>
+      ${_dayOneMode ? `<button class="day-one-exit-btn" id="day-one-exit-btn">Day One View &middot; Exit &rarr;</button>` : ''}
     </div>`;
 
     if (e.type === 'flight') {
@@ -1247,6 +1259,7 @@ function renderToday() {
     h += `<div class="trip-done">
       <div class="trip-done__heading">Trip Complete.</div>
       <div class="trip-done__sub">Vietnam &mdash; March 2026<br>16 days &middot; 6 cities</div>
+      <button class="day-one-btn" id="day-one-btn">Relive Day One</button>
     </div>`;
   }
 
@@ -1269,6 +1282,10 @@ function renderToday() {
     stamp.addEventListener('click', ev => { ev.stopPropagation(); navigate('refs'); });
   });
 
+  // Day-one mode toggle buttons
+  document.getElementById('day-one-btn')?.addEventListener('click', toggleDayOneMode);
+  document.getElementById('day-one-exit-btn')?.addEventListener('click', toggleDayOneMode);
+
   // Plan item interactions (check/remove)
   el.addEventListener('click', handleTodayPlanClick);
 
@@ -1278,7 +1295,9 @@ function renderToday() {
 
 // ── Render: JOURNEY ──────────────────────────
 function renderJourney() {
-  const now = today0();
+  const now = _dayOneMode
+    ? (() => { const d = new Date(TRIP_START); d.setHours(0,0,0,0); return d; })()
+    : today0();
   const el  = document.getElementById('screen-journey');
 
   let h = `<div class="page-header">
